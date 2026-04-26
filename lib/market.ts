@@ -95,49 +95,19 @@ export async function getCachedPrices(symbols: string[]): Promise<Map<string, nu
   return new Map(rows.map((r) => [r.symbol, Number(r.price)]));
 }
 
-/** Build symbol list from accounts' holdings and return cached prices. */
+/** Build symbol list from holdings and return cached prices. */
 export async function getPricesForPortfolio(): Promise<{
   prices: Map<string, number>;
   fxRates: Map<string, number>;
 }> {
-  const [holdings, accounts] = await Promise.all([
-    prisma.holding.findMany({
-      select: { symbol: true, currency: true },
-      distinct: ["symbol", "currency"]
-    }),
-    prisma.account.findMany({
-      select: { currency: true },
-      distinct: ["currency"]
-    })
-  ]);
+  const holdings = await prisma.holding.findMany({
+    select: { symbol: true },
+    distinct: ["symbol"]
+  });
 
-  const stockSymbols: string[] = [];
-  const fxSymbols: string[] = [];
-  const currencySet = new Set<string>();
-
-  for (const h of holdings) {
-    if (h.symbol) stockSymbols.push(h.symbol);
-    if (h.currency !== "KRW") {
-      const fx = FX_SYMBOLS[h.currency];
-      if (fx && !currencySet.has(h.currency)) {
-        fxSymbols.push(fx);
-        currencySet.add(h.currency);
-      }
-    }
-  }
-
-  for (const a of accounts) {
-    if (a.currency !== "KRW") {
-      const fx = FX_SYMBOLS[a.currency];
-      if (fx && !currencySet.has(a.currency)) {
-        fxSymbols.push(fx);
-        currencySet.add(a.currency);
-      }
-    }
-  }
-
-  const allSymbols = [...stockSymbols, ...fxSymbols];
-  const cached = await getCachedPrices(allSymbols);
+  const stockSymbols = holdings.map((h) => h.symbol).filter(Boolean) as string[];
+  const allFxSymbols = Object.values(FX_SYMBOLS) as string[];
+  const cached = await getCachedPrices([...stockSymbols, ...allFxSymbols]);
 
   const prices = new Map<string, number>();
   for (const sym of stockSymbols) {
