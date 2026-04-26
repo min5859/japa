@@ -18,6 +18,7 @@
     "@radix-ui/react-label": "latest",
     "@radix-ui/react-select": "latest",
     "@radix-ui/react-slot": "latest",
+    "@tailwindcss/postcss": "^4.2.4",
     "class-variance-authority": "latest",
     "clsx": "latest",
     "lucide-react": "latest",
