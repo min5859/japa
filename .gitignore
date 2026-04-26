@@ -76,6 +76,11 @@ supabase/.branches/
 # (.bkit/checkpoints, .bkit/decisions, .bkit/workflows는 추적 가능 — 의사결정 기록)
 
 # ------------------------------------------------------------
+# Claude Code agent memory (session-scoped, machine-generated)
+# ------------------------------------------------------------
+.claude/agent-memory/
+
+# ------------------------------------------------------------
 # Misc
 # ------------------------------------------------------------
 *.log
