@@ -110,8 +110,12 @@ export type MarketIndexRow = {
   fetchedAt: Date;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const prismaAny = prisma as any;
+const EMPTY_INDICES: MarketIndexRow[] = INDICES_CONFIG.map(
+  ({ symbol, name, currency, isYield }) => ({
+    symbol, name, currency, isYield,
+    price: 0, previousClose: 0, changePercent: 0, fetchedAt: new Date(0)
+  })
+);
 
 export async function refreshMarketIndices(): Promise<number> {
   let updated = 0;
@@ -124,7 +128,7 @@ export async function refreshMarketIndices(): Promise<number> {
         const previousClose: number | undefined = q?.regularMarketPreviousClose;
         if (price == null || previousClose == null) return;
         const changePercent = ((price - previousClose) / previousClose) * 100;
-        await prismaAny.marketIndex.upsert({
+        await prisma.marketIndex.upsert({
           where: { symbol },
           update: { name, price, previousClose, changePercent, currency, isYield, fetchedAt: new Date() },
           create: { symbol, name, price, previousClose, changePercent, currency, isYield }
@@ -137,27 +141,12 @@ export async function refreshMarketIndices(): Promise<number> {
 }
 
 export async function getMarketIndices(): Promise<MarketIndexRow[]> {
-  const rows: Array<{
-    symbol: string; name: string; currency: string; isYield: boolean;
-    price: { toNumber?: () => number } | number;
-    previousClose: { toNumber?: () => number } | number;
-    changePercent: { toNumber?: () => number } | number;
-    fetchedAt: Date;
-  }> = await prismaAny.marketIndex.findMany();
-
-  const toNum = (v: { toNumber?: () => number } | number) =>
-    typeof v === "number" ? v : (v?.toNumber?.() ?? 0);
-
+  const rows = await prisma.marketIndex.findMany();
   const bySymbol = new Map(
     rows.map((r) => [r.symbol, {
-      symbol: r.symbol,
-      name: r.name,
-      currency: r.currency,
-      isYield: r.isYield,
-      price: toNum(r.price),
-      previousClose: toNum(r.previousClose),
-      changePercent: toNum(r.changePercent),
-      fetchedAt: r.fetchedAt,
+      symbol: r.symbol, name: r.name, currency: r.currency, isYield: r.isYield,
+      price: Number(r.price), previousClose: Number(r.previousClose),
+      changePercent: Number(r.changePercent), fetchedAt: r.fetchedAt,
     }])
   );
   return INDICES_CONFIG.map(({ symbol, name, currency, isYield }) =>
