@@ -93,27 +93,8 @@
 
 ### Commit Message Format
 
-- The subject line stays short (under 70 chars) and uses Conventional Commits prefix (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
-- Always include a body separated from the subject by a blank line. The body explains **why** the change is needed, not just what it does.
-- Body should cover, when applicable:
-  - **Context / problem** that triggered the change (a bug symptom, a user request, an external API change, etc.)
-  - **Root cause** if the change is a fix
-  - **Trade-offs or alternatives considered** if the choice is non-obvious
-  - **Follow-up work** that is intentionally deferred
-- Use Korean for the body when the user is communicating in Korean; the subject line stays in English (Conventional Commits convention).
-- Example:
-
-  ```
-  fix: serialize Decimal fields before passing to client form
-
-  Prisma의 Decimal 객체는 plain object가 아니라 React Server Component →
-  Client Component 직렬화 경계에서 콘솔 경고를 발생시켰다. 편집 페이지에서
-  폼에 넘기기 직전에 Number()로 변환하고, 폼의 defaultValues 타입도
-  number | string | null 을 받도록 완화했다.
-
-  대안으로 lib/data.ts에서 일괄 변환하는 안도 고려했지만, 변환은
-  클라이언트로 넘기는 경계에서만 필요하므로 데이터 레이어는 그대로 두었다.
-  ```
+- Subject: Conventional Commits prefix (`feat:`/`fix:`/`chore:`/`docs:`/`refactor:`/`test:`), 영문, 70자 이하.
+- Body 필수: **무엇을** 했는지가 아니라 **왜** 필요했는지(원인·맥락·대안·미루는 작업)를 한국어로 적는다.
 
 ## Notes on Agent Compatibility
 
