@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BarChart3, Landmark, Layers3 } from "lucide-react";
+import { BarChart3, Landmark, Layers3, TrendingUp } from "lucide-react";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 const navigation = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/accounts", label: "Accounts", icon: Landmark },
-  { href: "/holdings", label: "Holdings", icon: Layers3 }
+  { href: "/holdings", label: "Holdings", icon: Layers3 },
+  { href: "/market", label: "Market", icon: TrendingUp }
 ];
 
 export default function RootLayout({

@@ -90,6 +90,18 @@ model PriceCache {
   fetchedAt DateTime @default(now())
 }
 
+model MarketIndexHistory {
+  symbol String
+  date   DateTime @db.Date
+  open   Decimal  @db.Decimal(18, 6)
+  high   Decimal  @db.Decimal(18, 6)
+  low    Decimal  @db.Decimal(18, 6)
+  close  Decimal  @db.Decimal(18, 6)
+
+  @@id([symbol, date])
+  @@index([symbol])
+}
+
 model MarketIndex {
   symbol        String   @id
   name          String

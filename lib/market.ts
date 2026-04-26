@@ -159,6 +159,51 @@ export async function getMarketIndices(): Promise<MarketIndexRow[]> {
   );
 }
 
+export type HistoryPoint = { date: string; value: number };
+
+export async function refreshMarketHistory(): Promise<void> {
+  const period1 = new Date();
+  period1.setFullYear(period1.getFullYear() - 1);
+
+  await Promise.allSettled(
+    INDICES_CONFIG.map(async ({ symbol }) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows: any[] = await yahooFinance.historical(symbol, {
+          period1,
+          interval: "1d"
+        });
+        if (!rows?.length) return;
+        await prisma.$transaction(
+          rows.map((r) =>
+            prisma.marketIndexHistory.upsert({
+              where: { symbol_date: { symbol, date: new Date(r.date) } },
+              update: { open: r.open ?? r.close, high: r.high ?? r.close, low: r.low ?? r.close, close: r.close },
+              create: { symbol, date: new Date(r.date), open: r.open ?? r.close, high: r.high ?? r.close, low: r.low ?? r.close, close: r.close }
+            })
+          )
+        );
+      } catch (e) {
+        console.error(`[MarketHistory] ${symbol} failed:`, e);
+      }
+    })
+  );
+}
+
+export async function getMarketHistory(symbol: string, days = 365): Promise<HistoryPoint[]> {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+  const rows = await prisma.marketIndexHistory.findMany({
+    where: { symbol, date: { gte: since } },
+    orderBy: { date: "asc" },
+    select: { date: true, close: true }
+  });
+  return rows.map((r) => ({
+    date: r.date.toISOString().slice(0, 10),
+    value: Number(r.close)
+  }));
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Load currently cached prices for given symbols. */
