@@ -96,7 +96,7 @@ export default async function AccountDetailPage({
             <CardTitle className="text-sm font-medium text-muted-foreground">현금</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{formatCurrency(account.cashValueBase)}</p>
+            <p className="text-2xl font-bold">{formatCurrency(account.cashBalance, account.currency)}</p>
           </CardContent>
         </Card>
         <Card>

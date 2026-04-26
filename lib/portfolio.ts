@@ -89,7 +89,7 @@ export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext):
 
   return {
     ...account,
-    cashBalance: cashValueBase,
+    cashBalance: toNumber(account.cashBalance),
     annualContributionLimit:
       account.annualContributionLimit != null
         ? toNumber(account.annualContributionLimit)
