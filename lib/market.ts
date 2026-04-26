@@ -125,16 +125,21 @@ export async function refreshMarketIndices(): Promise<number> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const q: any = await yahooFinance.quote(symbol);
         const price: number | undefined = q?.regularMarketPrice;
-        const previousClose: number | undefined = q?.regularMarketPreviousClose;
-        if (price == null || previousClose == null) return;
-        const changePercent = ((price - previousClose) / previousClose) * 100;
+        const previousClose: number | undefined = q?.regularMarketPreviousClose ?? q?.regularMarketOpen;
+        if (price == null || !previousClose) {
+          console.warn(`[MarketIndex] ${symbol}: price=${price} previousClose=${previousClose}`);
+          return;
+        }
+        const changePercent = Number((((price - previousClose) / previousClose) * 100).toFixed(4));
         await prisma.marketIndex.upsert({
           where: { symbol },
           update: { name, price, previousClose, changePercent, currency, isYield, fetchedAt: new Date() },
           create: { symbol, name, price, previousClose, changePercent, currency, isYield }
         });
         updated++;
-      } catch {}
+      } catch (e) {
+        console.error(`[MarketIndex] ${symbol} failed:`, e);
+      }
     })
   );
   return updated;
