@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "latest",
-    "@prisma/client": "latest",
+    "@prisma/client": "^6",
     "@radix-ui/react-label": "latest",
     "@radix-ui/react-select": "latest",
     "@radix-ui/react-slot": "latest",
@@ -37,7 +37,7 @@
     "eslint": "latest",
     "eslint-config-next": "latest",
     "postcss": "latest",
-    "prisma": "latest",
+    "prisma": "^6",
     "tailwindcss": "latest",
     "typescript": "latest"
   }
