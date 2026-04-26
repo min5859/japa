@@ -3,7 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { fxSymbol, refreshSymbols } from "@/lib/market";
+
+async function maybeFetchFx(currency: Currency) {
+  if (currency === "KRW") return;
+  const fx = fxSymbol(currency);
+  if (fx) await refreshSymbols([fx]).catch(() => {});
+}
 
 const AccountSchema = z.object({
   name: z.string().min(1, "계좌명은 필수입니다"),
@@ -41,6 +49,7 @@ export async function createAccount(
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await prisma.account.create({ data: parsed.data });
+  await maybeFetchFx(parsed.data.currency);
   revalidatePath("/");
   revalidatePath("/accounts");
   redirect("/accounts");
@@ -55,6 +64,7 @@ export async function updateAccount(
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await prisma.account.update({ where: { id }, data: parsed.data });
+  await maybeFetchFx(parsed.data.currency);
   revalidatePath("/");
   revalidatePath("/accounts");
   revalidatePath(`/accounts/${id}`);
