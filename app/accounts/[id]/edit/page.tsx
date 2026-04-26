@@ -12,8 +12,9 @@ export default async function EditAccountPage({
   const account = await getAccount(id);
   const action = updateAccount.bind(null, id);
 
+  const { holdings: _holdings, ...accountFields } = account;
   const formDefaults = {
-    ...account,
+    ...accountFields,
     cashBalance: Number(account.cashBalance),
     annualContributionLimit:
       account.annualContributionLimit != null ? Number(account.annualContributionLimit) : null
