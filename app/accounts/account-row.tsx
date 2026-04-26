@@ -61,6 +61,12 @@ export function AccountRow({ account }: { account: Account }) {
         </span>
         <div className="flex items-center gap-2">
           <Link
+            href={`/accounts/${account.id}`}
+            className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900"
+          >
+            상세
+          </Link>
+          <Link
             href={`/accounts/${account.id}/edit`}
             className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
           >
