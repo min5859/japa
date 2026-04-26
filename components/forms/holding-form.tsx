@@ -84,9 +84,12 @@ export function HoldingForm({
           <Input
             id="symbol"
             name="symbol"
-            placeholder="예: AAPL, 005930"
+            placeholder="예: AAPL, 005930.KS, 035720.KQ"
             defaultValue={defaultValues?.symbol ?? ""}
           />
+          <p className="text-xs text-muted-foreground">
+            Yahoo Finance 심볼 · 코스피는 .KS, 코스닥은 .KQ 접미사 필요
+          </p>
         </div>
       </div>
 

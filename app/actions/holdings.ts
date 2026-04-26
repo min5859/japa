@@ -3,7 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { refreshSymbols, fxSymbol } from "@/lib/market";
+
+async function fetchLivePrice(symbol: string | null, currency: Currency) {
+  if (!symbol) return;
+  const symbols = [symbol];
+  const fx = fxSymbol(currency);
+  if (fx) symbols.push(fx);
+  await refreshSymbols(symbols).catch(() => {});
+}
 
 const HoldingSchema = z.object({
   accountId: z.string().min(1, "계좌를 선택해 주세요"),
@@ -46,7 +56,10 @@ export async function createHolding(
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const { accountId, ...data } = parsed.data;
-  await prisma.holding.create({ data: { ...data, account: { connect: { id: accountId } } } });
+  const created = await prisma.holding.create({
+    data: { ...data, account: { connect: { id: accountId } } }
+  });
+  await fetchLivePrice(created.symbol, created.currency);
   revalidatePath("/");
   revalidatePath("/holdings");
   revalidatePath(`/accounts/${accountId}`);
@@ -66,6 +79,7 @@ export async function updateHolding(
     where: { id },
     data: { ...data, account: { connect: { id: accountId } } }
   });
+  await fetchLivePrice(holding.symbol, holding.currency);
   revalidatePath("/");
   revalidatePath("/holdings");
   revalidatePath(`/accounts/${holding.accountId}`);
