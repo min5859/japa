@@ -86,10 +86,16 @@ export async function getPricesForPortfolio(): Promise<{
   prices: Map<string, number>;
   fxRates: Map<string, number>;
 }> {
-  const holdings = await prisma.holding.findMany({
-    select: { symbol: true, currency: true },
-    distinct: ["symbol", "currency"]
-  });
+  const [holdings, accounts] = await Promise.all([
+    prisma.holding.findMany({
+      select: { symbol: true, currency: true },
+      distinct: ["symbol", "currency"]
+    }),
+    prisma.account.findMany({
+      select: { currency: true },
+      distinct: ["currency"]
+    })
+  ]);
 
   const stockSymbols: string[] = [];
   const fxSymbols: string[] = [];
@@ -102,6 +108,16 @@ export async function getPricesForPortfolio(): Promise<{
       if (fx && !currencySet.has(h.currency)) {
         fxSymbols.push(fx);
         currencySet.add(h.currency);
+      }
+    }
+  }
+
+  for (const a of accounts) {
+    if (a.currency !== "KRW") {
+      const fx = FX_SYMBOLS[a.currency];
+      if (fx && !currencySet.has(a.currency)) {
+        fxSymbols.push(fx);
+        currencySet.add(a.currency);
       }
     }
   }

@@ -52,6 +52,8 @@ export function AccountForm({
   const [isTaxAdvantaged, setIsTaxAdvantaged] = useState(
     defaultValues?.isTaxAdvantaged ?? false
   );
+  const [currency, setCurrency] = useState<string>(defaultValues?.currency ?? "KRW");
+  const cashStep = currency === "KRW" ? "1" : "0.01";
 
   return (
     <form action={formAction} className="space-y-5">
@@ -90,7 +92,12 @@ export function AccountForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="currency">기준 통화</Label>
-          <Select id="currency" name="currency" defaultValue={defaultValues?.currency ?? "KRW"}>
+          <Select
+            id="currency"
+            name="currency"
+            defaultValue={defaultValues?.currency ?? "KRW"}
+            onChange={(e) => setCurrency(e.target.value)}
+          >
             {CURRENCIES.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
@@ -106,7 +113,7 @@ export function AccountForm({
           id="cashBalance"
           name="cashBalance"
           type="number"
-          step="1"
+          step={cashStep}
           placeholder="0"
           defaultValue={defaultValues?.cashBalance?.toString() ?? "0"}
         />

@@ -80,7 +80,8 @@ export function enrichHolding(holding: Holding, ctx?: PriceContext): HoldingValu
 }
 
 export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext): AccountValue {
-  const cashValueBase = toNumber(account.cashBalance);
+  const fxRate = account.currency === "KRW" ? 1 : (ctx?.fxRates.get(account.currency) ?? 1);
+  const cashValueBase = toNumber(account.cashBalance) * fxRate;
   const holdings = account.holdings.map((h) => enrichHolding(h, ctx));
   const holdingsValueBase = holdings.reduce((total, h) => total + h.marketValueBase, 0);
   const isLiability = account.type === "CREDIT" || account.type === "LOAN";
