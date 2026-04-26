@@ -2,7 +2,7 @@ import YahooFinance from "yahoo-finance2";
 import { prisma } from "@/lib/prisma";
 import type { Currency } from "@prisma/client";
 
-const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey", "ripHistorical"] });
 
 // Yahoo Finance FX symbols: <from>KRW=X
 const FX_SYMBOLS: Partial<Record<Currency, string>> = {
@@ -169,13 +169,16 @@ export async function refreshMarketHistory(): Promise<void> {
     INDICES_CONFIG.map(async ({ symbol }) => {
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rows: any[] = await yahooFinance.historical(symbol, {
+        const result: any = await yahooFinance.chart(symbol, {
           period1,
+          period2: new Date(),
           interval: "1d"
         });
-        if (!rows?.length) return;
+        const quotes = result?.quotes ?? [];
+        if (!quotes.length) return;
         await prisma.$transaction(
-          rows.map((r) =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          quotes.filter((r: any) => r.close != null).map((r: any) =>
             prisma.marketIndexHistory.upsert({
               where: { symbol_date: { symbol, date: new Date(r.date) } },
               update: { open: r.open ?? r.close, high: r.high ?? r.close, low: r.low ?? r.close, close: r.close },
