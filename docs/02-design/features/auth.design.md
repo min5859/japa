@@ -112,11 +112,17 @@ middleware.ts                  # 루트 — GATE 4
 {
   httpOnly: true,                                    // XSS 방어
   secure: process.env.NODE_ENV === 'production',     // localhost는 false
-  sameSite: 'strict',                                // CSRF 방어
+  sameSite: 'lax',                                   // CSRF 방어 + Magic Link cross-site 호환
   path: '/',
   // maxAge: Supabase가 관리 (refresh token + access token)
 }
 ```
+
+> ⚠️ **`sameSite='strict'` 대신 `'lax'` 채택 사유**:
+> - 매직 링크 클릭은 이메일 도메인(gmail.com 등) → localhost로의 **cross-site GET 네비게이션**
+> - `'strict'`이면 PKCE `code_verifier` 쿠키가 전송되지 않아 `exchangeCodeForSession()` 실패
+> - `'lax'`는 GET-only cross-site 시 쿠키 전송, POST/PUT는 차단 → CSRF 방어 효과 거의 동등
+> - OAuth/Magic Link 표준 패턴이며 Supabase 공식 가이드도 `'lax'` 권장
 
 `@supabase/ssr` 패키지의 `createServerClient`가 위 옵션을 자동 적용. 별도 쿠키 핸들러 작성 불필요.
 

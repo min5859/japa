@@ -22,7 +22,10 @@ export async function createSupabaseServerClient() {
                 ...options,
                 httpOnly: true,
                 secure: isProd,
-                sameSite: "strict",
+                // 'lax': 매직 링크/OAuth 같은 cross-site GET 네비게이션 시 쿠키 전송 허용.
+                // PKCE code_verifier가 이메일 클릭 후에도 보존되어야 하므로 'strict'는 부적합.
+                // CSRF 방어는 GET-only 쿠키이므로 충분.
+                sameSite: "lax",
                 path: "/",
               });
             });

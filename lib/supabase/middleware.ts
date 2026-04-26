@@ -47,7 +47,8 @@ export async function updateSession(request: NextRequest) {
               ...options,
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
-              sameSite: "strict",
+              // 'lax': 매직 링크 cross-site 네비게이션 호환. server.ts와 동일 정책.
+              sameSite: "lax",
               path: "/",
             });
           });
