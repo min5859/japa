@@ -1,10 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { refreshAllPrices } from "@/lib/market";
+import { refreshAllPrices, refreshMarketIndices } from "@/lib/market";
 
 export async function refreshPrices(): Promise<{ updated: number }> {
-  const result = await refreshAllPrices();
+  const [portfolio, indices] = await Promise.all([
+    refreshAllPrices(),
+    refreshMarketIndices()
+  ]);
   revalidatePath("/", "layout");
-  return result;
+  return { updated: portfolio.updated + indices };
 }

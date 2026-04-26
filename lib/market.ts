@@ -86,6 +86,87 @@ export async function refreshAllPrices(): Promise<{ updated: number }> {
   return { updated: priceMap.size };
 }
 
+// ─── Market Indices ───────────────────────────────────────────────────────────
+
+const INDICES_CONFIG = [
+  { symbol: "^KS11",    name: "KOSPI",       currency: "KRW", isYield: false },
+  { symbol: "^KQ11",    name: "KOSDAQ",      currency: "KRW", isYield: false },
+  { symbol: "^GSPC",    name: "S&P 500",     currency: "USD", isYield: false },
+  { symbol: "^IXIC",    name: "NASDAQ",      currency: "USD", isYield: false },
+  { symbol: "^DJI",     name: "다우존스",    currency: "USD", isYield: false },
+  { symbol: "^N225",    name: "닛케이",      currency: "JPY", isYield: false },
+  { symbol: "USDKRW=X", name: "달러/원",     currency: "KRW", isYield: false },
+  { symbol: "^TNX",     name: "미국채 10Y",  currency: "USD", isYield: true  },
+] as const;
+
+export type MarketIndexRow = {
+  symbol: string;
+  name: string;
+  currency: string;
+  isYield: boolean;
+  price: number;
+  previousClose: number;
+  changePercent: number;
+  fetchedAt: Date;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const prismaAny = prisma as any;
+
+export async function refreshMarketIndices(): Promise<number> {
+  let updated = 0;
+  await Promise.allSettled(
+    INDICES_CONFIG.map(async ({ symbol, name, currency, isYield }) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const q: any = await yahooFinance.quote(symbol);
+        const price: number | undefined = q?.regularMarketPrice;
+        const previousClose: number | undefined = q?.regularMarketPreviousClose;
+        if (price == null || previousClose == null) return;
+        const changePercent = ((price - previousClose) / previousClose) * 100;
+        await prismaAny.marketIndex.upsert({
+          where: { symbol },
+          update: { name, price, previousClose, changePercent, currency, isYield, fetchedAt: new Date() },
+          create: { symbol, name, price, previousClose, changePercent, currency, isYield }
+        });
+        updated++;
+      } catch {}
+    })
+  );
+  return updated;
+}
+
+export async function getMarketIndices(): Promise<MarketIndexRow[]> {
+  const rows: Array<{
+    symbol: string; name: string; currency: string; isYield: boolean;
+    price: { toNumber?: () => number } | number;
+    previousClose: { toNumber?: () => number } | number;
+    changePercent: { toNumber?: () => number } | number;
+    fetchedAt: Date;
+  }> = await prismaAny.marketIndex.findMany();
+
+  const toNum = (v: { toNumber?: () => number } | number) =>
+    typeof v === "number" ? v : (v?.toNumber?.() ?? 0);
+
+  const bySymbol = new Map(
+    rows.map((r) => [r.symbol, {
+      symbol: r.symbol,
+      name: r.name,
+      currency: r.currency,
+      isYield: r.isYield,
+      price: toNum(r.price),
+      previousClose: toNum(r.previousClose),
+      changePercent: toNum(r.changePercent),
+      fetchedAt: r.fetchedAt,
+    }])
+  );
+  return INDICES_CONFIG.map(({ symbol, name, currency, isYield }) =>
+    bySymbol.get(symbol) ?? { symbol, name, currency, isYield, price: 0, previousClose: 0, changePercent: 0, fetchedAt: new Date(0) }
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 /** Load currently cached prices for given symbols. */
 export async function getCachedPrices(symbols: string[]): Promise<Map<string, number>> {
   if (symbols.length === 0) return new Map();

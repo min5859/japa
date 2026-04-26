@@ -89,3 +89,14 @@ model PriceCache {
   currency  String   @default("USD")
   fetchedAt DateTime @default(now())
 }
+
+model MarketIndex {
+  symbol        String   @id
+  name          String
+  price         Decimal  @db.Decimal(18, 6)
+  previousClose Decimal  @db.Decimal(18, 6)
+  changePercent Decimal  @db.Decimal(8, 4)
+  currency      String   @default("USD")
+  isYield       Boolean  @default(false)
+  fetchedAt     DateTime @default(now())
+}

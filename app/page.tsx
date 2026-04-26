@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getPortfolio } from "@/lib/data";
+import { getMarketIndices } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { enrichAccount } from "@/lib/portfolio";
 import { RefreshPricesButton } from "@/components/refresh-prices-button";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
@@ -18,8 +18,17 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   OTHER: "기타"
 };
 
+function formatIndexValue(price: number, isYield: boolean, currency: string): string {
+  if (isYield) return `${price.toFixed(2)}%`;
+  if (currency === "KRW") return new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 2 }).format(price);
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(price);
+}
+
 export default async function DashboardPage() {
-  const { accounts, summary } = await getPortfolio();
+  const [{ accounts, summary }, indices] = await Promise.all([
+    getPortfolio(),
+    getMarketIndices()
+  ]);
 
   return (
     <div className="space-y-8">
@@ -54,6 +63,39 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Market indices */}
+      <div>
+        <h2 className="mb-3 text-lg font-semibold">주요 지수</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+          {indices.map((idx) => {
+            const hasData = idx.fetchedAt.getTime() > 0;
+            const up = idx.changePercent > 0;
+            const down = idx.changePercent < 0;
+            const changeColor = up ? "text-red-500" : down ? "text-blue-500" : "text-muted-foreground";
+            const changePrefix = up ? "▲" : down ? "▼" : "";
+            return (
+              <Card key={idx.symbol} className="px-1">
+                <CardContent className="pt-4 pb-3">
+                  <p className="text-xs font-medium text-muted-foreground truncate">{idx.name}</p>
+                  {hasData ? (
+                    <>
+                      <p className="mt-1 text-sm font-semibold leading-tight">
+                        {formatIndexValue(idx.price, idx.isYield, idx.currency)}
+                      </p>
+                      <p className={`mt-0.5 text-xs ${changeColor}`}>
+                        {changePrefix}{Math.abs(idx.changePercent).toFixed(2)}%
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-xs text-muted-foreground">—</p>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
       {/* Account list */}
