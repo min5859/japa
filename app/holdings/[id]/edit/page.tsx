@@ -12,6 +12,15 @@ export default async function EditHoldingPage({
   const [holding, accounts] = await Promise.all([getHolding(id), getAccountsForSelect()]);
   const action = updateHolding.bind(null, id);
 
+  const formDefaults = {
+    ...holding,
+    quantity: Number(holding.quantity),
+    averageCost: Number(holding.averageCost),
+    manualPrice: Number(holding.manualPrice),
+    manualFxRate: Number(holding.manualFxRate),
+    dividendYield: holding.dividendYield != null ? Number(holding.dividendYield) : null
+  };
+
   return (
     <div className="mx-auto max-w-2xl">
       <Card>
@@ -19,7 +28,7 @@ export default async function EditHoldingPage({
           <CardTitle>자산 편집 — {holding.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          <HoldingForm action={action} accounts={accounts} defaultValues={holding} />
+          <HoldingForm action={action} accounts={accounts} defaultValues={formDefaults} />
         </CardContent>
       </Card>
     </div>

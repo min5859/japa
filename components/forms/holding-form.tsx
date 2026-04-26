@@ -36,6 +36,17 @@ const CURRENCIES = [
 type AccountOption = { id: string; name: string; institution: string | null };
 type ActionFn = (state: HoldingActionState, formData: FormData) => Promise<HoldingActionState>;
 
+export type HoldingDefaults = Omit<
+  Partial<Holding>,
+  "quantity" | "averageCost" | "manualPrice" | "manualFxRate" | "dividendYield"
+> & {
+  quantity?: number | string | null;
+  averageCost?: number | string | null;
+  manualPrice?: number | string | null;
+  manualFxRate?: number | string | null;
+  dividendYield?: number | string | null;
+};
+
 export function HoldingForm({
   action,
   accounts,
@@ -44,7 +55,7 @@ export function HoldingForm({
 }: {
   action: ActionFn;
   accounts: AccountOption[];
-  defaultValues?: Partial<Holding>;
+  defaultValues?: HoldingDefaults;
   defaultAccountId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });

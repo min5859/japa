@@ -33,12 +33,20 @@ const CURRENCIES = [
 
 type ActionFn = (state: AccountActionState, formData: FormData) => Promise<AccountActionState>;
 
+export type AccountDefaults = Omit<
+  Partial<Account>,
+  "cashBalance" | "annualContributionLimit"
+> & {
+  cashBalance?: number | string | null;
+  annualContributionLimit?: number | string | null;
+};
+
 export function AccountForm({
   action,
   defaultValues
 }: {
   action: ActionFn;
-  defaultValues?: Partial<Account>;
+  defaultValues?: AccountDefaults;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
   const [isTaxAdvantaged, setIsTaxAdvantaged] = useState(
