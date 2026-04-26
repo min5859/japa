@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  BROKERAGE
+  RETIREMENT
+  TAX_ADVANTAGED
+  CREDIT
+  LOAN
+  OTHER
+}
+
+enum AssetClass {
+  CASH
+  DOMESTIC_STOCK
+  INTERNATIONAL_STOCK
+  ETF
+  BOND
+  FUND
+  CRYPTO
+  REAL_ESTATE
+  LIABILITY
+  OTHER
+}
+
+enum Currency {
+  KRW
+  USD
+  EUR
+  JPY
+  CNY
+  GBP
+  HKD
+  SGD
+}
+
+model Account {
+  id                      String      @id @default(cuid())
+  name                    String
+  institution             String?
+  type                    AccountType @default(BROKERAGE)
+  currency                Currency    @default(KRW)
+  cashBalance             Decimal     @default(0) @db.Decimal(18, 4)
+  isTaxAdvantaged         Boolean     @default(false)
+  annualContributionLimit Decimal?    @db.Decimal(18, 4)
+  notes                   String?
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  holdings                Holding[]
+
+  @@index([type])
+  @@index([isTaxAdvantaged])
+}
+
+model Holding {
+  id             String     @id @default(cuid())
+  accountId      String
+  symbol         String?
+  name           String
+  assetClass     AssetClass @default(ETF)
+  currency       Currency   @default(KRW)
+  quantity       Decimal    @default(0) @db.Decimal(24, 8)
+  averageCost    Decimal    @default(0) @db.Decimal(18, 4)
+  manualPrice    Decimal    @default(0) @db.Decimal(18, 4)
+  manualFxRate   Decimal    @default(1) @db.Decimal(18, 8)
+  dividendYield  Decimal?   @db.Decimal(8, 4)
+  notes          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  account        Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([assetClass])
+  @@index([symbol])
+}

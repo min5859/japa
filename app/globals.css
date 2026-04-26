@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 42 37% 96%;
+  --foreground: 215 28% 13%;
+  --card: 0 0% 100%;
+  --card-foreground: 215 28% 13%;
+  --primary: 169 72% 24%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 37 35% 89%;
+  --secondary-foreground: 215 28% 13%;
+  --muted: 38 28% 91%;
+  --muted-foreground: 215 13% 42%;
+  --accent: 26 85% 58%;
+  --accent-foreground: 215 28% 13%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 35 22% 82%;
+  --input: 35 22% 82%;
+  --ring: 169 72% 24%;
+  --radius: 0.9rem;
+}
+
+* {
+  @apply border-border;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+.dashboard-backdrop {
+  background:
+    radial-gradient(circle at 12% 10%, hsl(169 72% 24% / 0.16), transparent 28rem),
+    radial-gradient(circle at 88% 4%, hsl(26 85% 58% / 0.18), transparent 24rem),
+    linear-gradient(135deg, hsl(42 37% 96%), hsl(38 40% 91%));
+}
