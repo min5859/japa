@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { enrichAccount } from "@/lib/portfolio";
+import { RefreshPricesButton } from "@/components/refresh-prices-button";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   CHECKING: "입출금",
@@ -59,12 +60,15 @@ export default async function DashboardPage() {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">계좌 목록</h2>
-          <Button asChild size="sm">
-            <Link href="/accounts/new">
-              <Plus className="h-4 w-4" />
-              계좌 추가
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <RefreshPricesButton />
+            <Button asChild size="sm">
+              <Link href="/accounts/new">
+                <Plus className="h-4 w-4" />
+                계좌 추가
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {accounts.length === 0 ? (

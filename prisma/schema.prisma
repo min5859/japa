@@ -82,3 +82,10 @@ model Holding {
   @@index([assetClass])
   @@index([symbol])
 }
+
+model PriceCache {
+  symbol    String   @id
+  price     Decimal  @db.Decimal(18, 4)
+  currency  String   @default("USD")
+  fetchedAt DateTime @default(now())
+}

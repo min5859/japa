@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { getAccount } from "@/lib/data";
+import { getAccountWithPrices } from "@/lib/data";
 import { enrichAccount } from "@/lib/portfolio";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,8 +38,8 @@ export default async function AccountDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const raw = await getAccount(id);
-  const account = enrichAccount(raw);
+  const { account: raw, priceCtx } = await getAccountWithPrices(id);
+  const account = enrichAccount(raw, priceCtx);
 
   const deleteAccountWithId = deleteAccount.bind(null, id);
 

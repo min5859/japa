@@ -9,6 +9,7 @@ export type HoldingValue = Holding & {
   costBasisBase: number;
   marketValueBase: number;
   unrealizedGainBase: number;
+  usingLivePrice: boolean;
 };
 
 export type AccountValue = Account & {
@@ -30,29 +31,43 @@ export type PortfolioSummary = {
   holdingCount: number;
 };
 
-export function enrichHolding(holding: Holding): HoldingValue {
+export type PriceContext = {
+  /** symbol → live market price (in the holding's own currency) */
+  prices: Map<string, number>;
+  /** Currency code → KRW exchange rate */
+  fxRates: Map<string, number>;
+};
+
+export function enrichHolding(holding: Holding, ctx?: PriceContext): HoldingValue {
   const quantity = toNumber(holding.quantity);
   const averageCost = toNumber(holding.averageCost);
+
+  const livePrice = holding.symbol ? ctx?.prices.get(holding.symbol) : undefined;
+  const liveFxRate = holding.currency !== "KRW" ? ctx?.fxRates.get(holding.currency) : undefined;
+
   const manualPrice = toNumber(holding.manualPrice);
   const manualFxRate = toNumber(holding.manualFxRate) || 1;
-  const costBasisBase = quantity * averageCost * manualFxRate;
-  const marketValueBase = quantity * manualPrice * manualFxRate;
+
+  const price = livePrice ?? manualPrice;
+  const fxRate = holding.currency === "KRW" ? 1 : (liveFxRate ?? manualFxRate);
+  const costFxRate = holding.currency === "KRW" ? 1 : (liveFxRate ?? manualFxRate);
+
+  const costBasisBase = quantity * averageCost * costFxRate;
+  const marketValueBase = quantity * price * fxRate;
 
   return {
     ...holding,
     costBasisBase,
     marketValueBase,
-    unrealizedGainBase: marketValueBase - costBasisBase
+    unrealizedGainBase: marketValueBase - costBasisBase,
+    usingLivePrice: livePrice !== undefined
   };
 }
 
-export function enrichAccount(account: AccountWithHoldings): AccountValue {
+export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext): AccountValue {
   const cashValueBase = toNumber(account.cashBalance);
-  const holdings = account.holdings.map(enrichHolding);
-  const holdingsValueBase = holdings.reduce(
-    (total, holding) => total + holding.marketValueBase,
-    0
-  );
+  const holdings = account.holdings.map((h) => enrichHolding(h, ctx));
+  const holdingsValueBase = holdings.reduce((total, h) => total + h.marketValueBase, 0);
   const isLiability = account.type === "CREDIT" || account.type === "LOAN";
   const accountValue = cashValueBase + holdingsValueBase;
 
@@ -66,11 +81,14 @@ export function enrichAccount(account: AccountWithHoldings): AccountValue {
   };
 }
 
-export function summarizePortfolio(accounts: AccountWithHoldings[]): {
+export function summarizePortfolio(
+  accounts: AccountWithHoldings[],
+  ctx?: PriceContext
+): {
   accounts: AccountValue[];
   summary: PortfolioSummary;
 } {
-  const enrichedAccounts = accounts.map(enrichAccount);
+  const enrichedAccounts = accounts.map((a) => enrichAccount(a, ctx));
   const cash = enrichedAccounts.reduce(
     (total, account) => total + (account.totalValueBase > 0 ? account.cashValueBase : 0),
     0

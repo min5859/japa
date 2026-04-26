@@ -1,17 +1,21 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { summarizePortfolio } from "@/lib/portfolio";
+import { getPricesForPortfolio } from "@/lib/market";
 
 export async function getPortfolio() {
-  const accounts = await prisma.account.findMany({
-    orderBy: [{ isTaxAdvantaged: "desc" }, { name: "asc" }],
-    include: {
-      holdings: {
-        orderBy: [{ assetClass: "asc" }, { name: "asc" }]
+  const [accounts, priceCtx] = await Promise.all([
+    prisma.account.findMany({
+      orderBy: [{ isTaxAdvantaged: "desc" }, { name: "asc" }],
+      include: {
+        holdings: {
+          orderBy: [{ assetClass: "asc" }, { name: "asc" }]
+        }
       }
-    }
-  });
-  return summarizePortfolio(accounts);
+    }),
+    getPricesForPortfolio()
+  ]);
+  return summarizePortfolio(accounts, priceCtx);
 }
 
 export async function getAccount(id: string) {
@@ -25,6 +29,14 @@ export async function getAccount(id: string) {
   });
   if (!account) notFound();
   return account;
+}
+
+export async function getAccountWithPrices(id: string) {
+  const [account, priceCtx] = await Promise.all([
+    getAccount(id),
+    getPricesForPortfolio()
+  ]);
+  return { account, priceCtx };
 }
 
 export async function getAccountsForSelect() {
