@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { deleteAccount } from "@/app/actions/accounts";
 import { deleteHolding } from "@/app/actions/holdings";
+import { DeleteButton } from "@/components/delete-button";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   CHECKING: "입출금",
@@ -70,21 +71,13 @@ export default async function AccountDetailPage({
               편집
             </Link>
           </Button>
-          <form action={deleteAccountWithId}>
-            <Button
-              type="submit"
-              size="sm"
-              variant="destructive"
-              onClick={(e) => {
-                if (!confirm("계좌를 삭제하면 모든 보유 자산도 함께 삭제됩니다. 계속하시겠습니까?")) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-              삭제
-            </Button>
-          </form>
+          <DeleteButton
+            action={deleteAccountWithId}
+            message="계좌를 삭제하면 모든 보유 자산도 함께 삭제됩니다. 계속하시겠습니까?"
+          >
+            <Trash2 className="h-4 w-4" />
+            삭제
+          </DeleteButton>
         </div>
       </div>
 
@@ -189,21 +182,14 @@ export default async function AccountDetailPage({
                                 <Pencil className="h-3.5 w-3.5" />
                               </Link>
                             </Button>
-                            <form action={deleteHoldingAction}>
-                              <Button
-                                type="submit"
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive"
-                                onClick={(e) => {
-                                  if (!confirm(`${holding.name}을(를) 삭제하시겠습니까?`)) {
-                                    e.preventDefault();
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </form>
+                            <DeleteButton
+                              action={deleteHoldingAction}
+                              message={`${holding.name}을(를) 삭제하시겠습니까?`}
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </DeleteButton>
                           </div>
                         </td>
                       </tr>
