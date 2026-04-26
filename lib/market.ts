@@ -1,6 +1,8 @@
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 import { prisma } from "@/lib/prisma";
 import type { Currency } from "@prisma/client";
+
+const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey"] });
 
 // Yahoo Finance FX symbols: <from>KRW=X
 const FX_SYMBOLS: Partial<Record<Currency, string>> = {
