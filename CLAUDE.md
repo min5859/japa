@@ -141,6 +141,9 @@ docs/
 
 현재 문서:
 - `docs/01-plan/phase-1-mvp-plan.md` — Phase 1 MVP 청사진
+- `docs/TODO.md` — 향후 검토 사항 (ORM/SMTP/배포/보안 강화 등)
+  - 새 결정·보류 항목 발생 시 여기에 추가
+  - Phase 종료 또는 분기마다 우선순위 재정렬
 
 ## 결정 사항 (2026-04-26 확정)
 
