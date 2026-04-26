@@ -53,18 +53,32 @@ export async function refreshSymbols(symbols: string[]): Promise<Map<string, num
 
 /** Collect all symbols (holdings + FX) that need refreshing and update cache. */
 export async function refreshAllPrices(): Promise<{ updated: number }> {
-  const holdings = await prisma.holding.findMany({
-    select: { symbol: true, currency: true },
-    distinct: ["symbol", "currency"]
-  });
+  const [holdings, accounts] = await Promise.all([
+    prisma.holding.findMany({
+      select: { symbol: true, currency: true },
+      distinct: ["symbol", "currency"]
+    }),
+    prisma.account.findMany({
+      select: { currency: true },
+      distinct: ["currency"]
+    })
+  ]);
 
   const symbols: string[] = [];
+  const fxAdded = new Set<string>();
 
   for (const h of holdings) {
     if (h.symbol) symbols.push(h.symbol);
     if (h.currency !== "KRW") {
       const fx = FX_SYMBOLS[h.currency];
-      if (fx) symbols.push(fx);
+      if (fx && !fxAdded.has(fx)) { symbols.push(fx); fxAdded.add(fx); }
+    }
+  }
+
+  for (const a of accounts) {
+    if (a.currency !== "KRW") {
+      const fx = FX_SYMBOLS[a.currency];
+      if (fx && !fxAdded.has(fx)) { symbols.push(fx); fxAdded.add(fx); }
     }
   }
 
