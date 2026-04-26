@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { getAllHoldings } from "@/lib/data";
 import { enrichHolding } from "@/lib/portfolio";
+import { getPricesForPortfolio } from "@/lib/market";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -20,8 +21,8 @@ const ASSET_CLASS_LABELS: Record<string, string> = {
 };
 
 export default async function HoldingsPage() {
-  const rawHoldings = await getAllHoldings();
-  const holdings = rawHoldings.map((h) => ({ ...enrichHolding(h), account: h.account }));
+  const [rawHoldings, priceCtx] = await Promise.all([getAllHoldings(), getPricesForPortfolio()]);
+  const holdings = rawHoldings.map((h) => ({ ...enrichHolding(h, priceCtx), account: h.account }));
 
   return (
     <div className="space-y-6">
