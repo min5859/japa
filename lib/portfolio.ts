@@ -5,14 +5,24 @@ export type AccountWithHoldings = Account & {
   holdings: Holding[];
 };
 
-export type HoldingValue = Holding & {
+export type HoldingValue = Omit<
+  Holding,
+  "quantity" | "averageCost" | "manualPrice" | "manualFxRate" | "dividendYield"
+> & {
+  quantity: number;
+  averageCost: number;
+  manualPrice: number;
+  manualFxRate: number;
+  dividendYield: number | null;
   costBasisBase: number;
   marketValueBase: number;
   unrealizedGainBase: number;
   usingLivePrice: boolean;
 };
 
-export type AccountValue = Account & {
+export type AccountValue = Omit<Account, "cashBalance" | "annualContributionLimit"> & {
+  cashBalance: number;
+  annualContributionLimit: number | null;
   holdings: HoldingValue[];
   cashValueBase: number;
   holdingsValueBase: number;
@@ -57,6 +67,11 @@ export function enrichHolding(holding: Holding, ctx?: PriceContext): HoldingValu
 
   return {
     ...holding,
+    quantity,
+    averageCost,
+    manualPrice,
+    manualFxRate,
+    dividendYield: holding.dividendYield != null ? toNumber(holding.dividendYield) : null,
     costBasisBase,
     marketValueBase,
     unrealizedGainBase: marketValueBase - costBasisBase,
@@ -73,6 +88,11 @@ export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext):
 
   return {
     ...account,
+    cashBalance: cashValueBase,
+    annualContributionLimit:
+      account.annualContributionLimit != null
+        ? toNumber(account.annualContributionLimit)
+        : null,
     holdings,
     cashValueBase,
     holdingsValueBase,
