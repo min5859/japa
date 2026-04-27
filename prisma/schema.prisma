@@ -112,3 +112,18 @@ model MarketIndex {
   isYield       Boolean  @default(false)
   fetchedAt     DateTime @default(now())
 }
+
+// 월별 포트폴리오 스냅샷 — 순자산 추이 차트용
+model PortfolioSnapshot {
+  id          String   @id @default(cuid())
+  takenAt     DateTime @default(now())
+  netWorth    Decimal  @db.Decimal(18, 4)
+  totalAssets Decimal  @db.Decimal(18, 4)
+  cash        Decimal  @db.Decimal(18, 4)
+  investments Decimal  @db.Decimal(18, 4)
+  liabilities Decimal  @db.Decimal(18, 4)
+  // JSON 직렬화: { assetClass: value }[]
+  allocation  Json
+
+  @@index([takenAt])
+}

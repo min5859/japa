@@ -65,3 +65,23 @@ export async function getHolding(id: string) {
   if (!holding) notFound();
   return holding;
 }
+
+export async function getSnapshots() {
+  const rows = await prisma.portfolioSnapshot.findMany({
+    orderBy: { takenAt: "asc" },
+    select: {
+      takenAt: true,
+      netWorth: true,
+      totalAssets: true,
+      liabilities: true,
+      allocation: true
+    }
+  });
+  return rows.map((r) => ({
+    label: r.takenAt.toISOString().slice(0, 7), // "YYYY-MM"
+    netWorth: Number(r.netWorth),
+    totalAssets: Number(r.totalAssets),
+    liabilities: Number(r.liabilities),
+    allocation: r.allocation as { assetClass: string; value: number }[]
+  }));
+}

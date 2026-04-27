@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { getPortfolio } from "@/lib/data";
+import { getPortfolio, getSnapshots } from "@/lib/data";
 import { getMarketIndices } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { RefreshPricesButton } from "@/components/refresh-prices-button";
+import { SaveSnapshotButton } from "@/components/save-snapshot-button";
+import { AllocationPieChart } from "@/components/charts/allocation-pie";
+import { NetWorthLineChart } from "@/components/charts/net-worth-line";
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   CHECKING: "입출금",
@@ -25,10 +28,21 @@ function formatIndexValue(price: number, isYield: boolean, currency: string): st
 }
 
 export default async function DashboardPage() {
-  const [{ accounts, summary }, indices] = await Promise.all([
+  const [{ accounts, summary }, indices, snapshots] = await Promise.all([
     getPortfolio(),
-    getMarketIndices()
+    getMarketIndices(),
+    getSnapshots()
   ]);
+
+  // 자산 배분 집계
+  const allHoldings = accounts.flatMap((a) => a.holdings);
+  const byClass: Record<string, number> = {};
+  for (const h of allHoldings) {
+    if (h.marketValueBase > 0) {
+      byClass[h.assetClass] = (byClass[h.assetClass] ?? 0) + h.marketValueBase;
+    }
+  }
+  const allocationData = Object.entries(byClass).map(([assetClass, value]) => ({ assetClass, value }));
 
   return (
     <div className="space-y-8">
@@ -63,6 +77,32 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Charts */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">자산 배분</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {allocationData.length > 0 ? (
+              <AllocationPieChart data={allocationData} />
+            ) : (
+              <p className="py-16 text-center text-sm text-muted-foreground">보유 자산을 추가하면 배분 차트가 표시됩니다.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">순자산 추이</CardTitle>
+            <SaveSnapshotButton />
+          </CardHeader>
+          <CardContent>
+            <NetWorthLineChart data={snapshots} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Market indices */}
