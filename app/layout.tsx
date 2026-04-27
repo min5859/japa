@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BarChart3, Landmark, Layers3, TrendingUp } from "lucide-react";
+import { BarChart3, Landmark, Layers3, Receipt, TrendingUp } from "lucide-react";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +13,8 @@ const navigation = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/accounts", label: "Accounts", icon: Landmark },
   { href: "/holdings", label: "Holdings", icon: Layers3 },
-  { href: "/market", label: "Market", icon: TrendingUp }
+  { href: "/market", label: "Market", icon: TrendingUp },
+  { href: "/tax", label: "세금", icon: Receipt }
 ];
 
 export default function RootLayout({
