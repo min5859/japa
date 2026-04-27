@@ -10,6 +10,7 @@ import {
 } from "@/lib/accounts/schema";
 import type { Holding, Transaction } from "@/lib/transactions/schema";
 import { TransactionRow } from "./transactions/transaction-row";
+import { RefreshQuotesButton } from "./refresh-quotes-button";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,29 @@ export default async function AccountDetailPage({
     .eq("account_id", id)
     .order("ticker", { ascending: true });
   const holdings = (holdingsData ?? []) as Holding[];
+
+  // 가장 최신 시세 조회 (각 ticker별로 가장 최근 date)
+  type PriceRow = {
+    ticker: string;
+    date: string;
+    close_price: number | string;
+    currency: string;
+  };
+  const tickers = holdings.map((h) => h.ticker);
+  let priceByTicker = new Map<string, PriceRow>();
+  if (tickers.length > 0) {
+    const { data: priceData } = await supabase
+      .from("price_cache")
+      .select("ticker, date, close_price, currency")
+      .in("ticker", tickers)
+      .order("date", { ascending: false });
+    // ticker마다 첫 행(가장 최신)만 채택
+    const tmp = new Map<string, PriceRow>();
+    for (const row of (priceData ?? []) as PriceRow[]) {
+      if (!tmp.has(row.ticker)) tmp.set(row.ticker, row);
+    }
+    priceByTicker = tmp;
+  }
 
   const { data: txsData } = await supabase
     .from("transactions")
@@ -119,9 +143,12 @@ export default async function AccountDetailPage({
 
         {/* 보유종목 */}
         <div>
-          <h2 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-            보유종목 ({holdings.length})
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              보유종목 ({holdings.length})
+            </h2>
+            {holdings.length > 0 && <RefreshQuotesButton accountId={id} />}
+          </div>
           {holdings.length === 0 ? (
             <p className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
               아직 보유종목이 없습니다. 매수 거래를 추가하면 자동으로 집계됩니다.
@@ -136,12 +163,34 @@ export default async function AccountDetailPage({
                     <th className="px-3 py-2 text-left">종목명</th>
                     <th className="px-3 py-2 text-right">수량</th>
                     <th className="px-3 py-2 text-right">평균단가</th>
-                    <th className="px-3 py-2 text-right">취득원가</th>
+                    <th className="px-3 py-2 text-right">현재가</th>
+                    <th className="px-3 py-2 text-right">평가금액</th>
+                    <th className="px-3 py-2 text-right">수익률</th>
+                    <th className="px-3 py-2 text-left">갱신일</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                   {holdings.map((h) => {
-                    const cost = Number(h.quantity) * Number(h.avg_cost_price);
+                    const qty = Number(h.quantity);
+                    const avg = Number(h.avg_cost_price);
+                    const cost = qty * avg;
+                    const price = priceByTicker.get(h.ticker);
+                    const close = price ? Number(price.close_price) : null;
+                    const sameCurrency =
+                      price?.currency != null &&
+                      price.currency === h.cost_currency;
+                    const valuation =
+                      close != null && sameCurrency ? qty * close : null;
+                    const returnPct =
+                      close != null && sameCurrency && avg > 0
+                        ? (close / avg - 1) * 100
+                        : null;
+                    const returnColor =
+                      returnPct == null
+                        ? "text-gray-400 dark:text-gray-500"
+                        : returnPct >= 0
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-blue-600 dark:text-blue-400";
                     return (
                       <tr key={h.id}>
                         <td className="px-3 py-2 font-mono text-gray-900 dark:text-gray-100">
@@ -154,16 +203,42 @@ export default async function AccountDetailPage({
                           {h.name ?? "—"}
                         </td>
                         <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
-                          {Number(h.quantity).toLocaleString()}
+                          {qty.toLocaleString()}
                         </td>
                         <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
-                          {Number(h.avg_cost_price).toLocaleString()}
+                          {avg.toLocaleString()}
+                          <div className="text-[10px] text-gray-500 dark:text-gray-500">
+                            취득 {cost.toLocaleString(undefined, { maximumFractionDigits: 2 })} {h.cost_currency}
+                          </div>
                         </td>
-                        <td className="px-3 py-2 text-right text-gray-700 dark:text-gray-300">
-                          {cost.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })}{" "}
-                          {h.cost_currency}
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                          {close != null
+                            ? close.toLocaleString(undefined, {
+                                maximumFractionDigits: 4,
+                              })
+                            : "—"}
+                          {price && !sameCurrency && (
+                            <div className="text-[10px] text-amber-600 dark:text-amber-400">
+                              통화 다름 ({price.currency} vs {h.cost_currency})
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right text-gray-900 dark:text-gray-100">
+                          {valuation != null
+                            ? `${valuation.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${h.cost_currency}`
+                            : "—"}
+                        </td>
+                        <td className={`px-3 py-2 text-right font-medium ${returnColor}`}>
+                          {returnPct != null
+                            ? `${returnPct >= 0 ? "+" : ""}${returnPct.toFixed(2)}%`
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-left text-xs text-gray-500 dark:text-gray-400">
+                          {price?.date ?? (
+                            <span className="text-amber-600 dark:text-amber-400">
+                              갱신 필요
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -198,7 +273,7 @@ export default async function AccountDetailPage({
         </div>
 
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          ⚠️ 시세·평가금액은 Step 6 (Yahoo Finance 연동) 이후 표시됩니다.
+          ⚠️ 시세는 Yahoo Finance 일일 종가(또는 실시간) 기반 참고용. 환율 변환은 Phase 2 적용 예정 — 통화가 다른 경우 수익률은 표시되지 않습니다.
         </p>
       </section>
     </main>
