@@ -44,6 +44,58 @@ export function TransactionForm({
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // amount(체결총액) 자동 계산: 매수/매도일 때 quantity × price를 자동으로 채운다.
+  // 사용자가 amount를 직접 수정하면(amountTouched=true) 자동 갱신을 멈춘다.
+  // 편집 모드(transaction 존재)는 기존값 보존을 위해 처음부터 touched=true.
+  const [quantity, setQuantity] = useState<string>(
+    transaction?.quantity != null ? String(transaction.quantity) : "",
+  );
+  const [price, setPrice] = useState<string>(
+    transaction?.price != null ? String(transaction.price) : "",
+  );
+  const [amount, setAmount] = useState<string>(
+    transaction?.amount != null ? String(transaction.amount) : "",
+  );
+  const [amountTouched, setAmountTouched] = useState<boolean>(transaction != null);
+
+  function recalcAmount(q: string, p: string) {
+    const qn = Number(q);
+    const pn = Number(p);
+    if (Number.isFinite(qn) && Number.isFinite(pn) && qn > 0 && pn > 0) {
+      // numeric(20,2) → 소수 둘째 자리까지
+      setAmount((qn * pn).toFixed(2));
+    }
+  }
+
+  function handleTypeChange(t: TransactionType) {
+    setType(t);
+    // 신규 입력에서 매수/매도 ↔ 배당/이자/수수료 전환 시 amount 자동계산을 다시 켠다.
+    if (!transaction) {
+      setAmountTouched(false);
+      const willBeTrade = t === "buy" || t === "sell";
+      if (willBeTrade) {
+        recalcAmount(quantity, price);
+      } else {
+        setAmount("");
+      }
+    }
+  }
+
+  function handleQuantityChange(v: string) {
+    setQuantity(v);
+    if (isTrade && !amountTouched) recalcAmount(v, price);
+  }
+
+  function handlePriceChange(v: string) {
+    setPrice(v);
+    if (isTrade && !amountTouched) recalcAmount(quantity, v);
+  }
+
+  function handleAmountChange(v: string) {
+    setAmount(v);
+    setAmountTouched(true);
+  }
+
   function handleSubmit(formData: FormData) {
     setError(null);
 
@@ -84,7 +136,7 @@ export function TransactionForm({
             <button
               key={t}
               type="button"
-              onClick={() => setType(t)}
+              onClick={() => handleTypeChange(t)}
               className={
                 "rounded-md border px-3 py-1.5 text-sm font-medium transition " +
                 (type === t
@@ -198,7 +250,8 @@ export function TransactionForm({
                 step="0.0001"
                 min="0"
                 required
-                defaultValue={transaction?.quantity ?? ""}
+                value={quantity}
+                onChange={(e) => handleQuantityChange(e.target.value)}
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
               />
             </div>
@@ -213,7 +266,8 @@ export function TransactionForm({
                 step="0.0001"
                 min="0"
                 required
-                defaultValue={transaction?.price ?? ""}
+                value={price}
+                onChange={(e) => handlePriceChange(e.target.value)}
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
               />
             </div>
@@ -225,7 +279,14 @@ export function TransactionForm({
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label htmlFor="amount" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-            금액 <span className="text-xs text-gray-500">{isTrade ? "(체결총액)" : "(필수)"}</span>
+            금액{" "}
+            <span className="text-xs text-gray-500">
+              {isTrade
+                ? amountTouched
+                  ? "(직접 입력됨)"
+                  : "(자동 계산, 수정 가능)"
+                : "(필수)"}
+            </span>
           </label>
           <input
             id="amount"
@@ -234,7 +295,8 @@ export function TransactionForm({
             step="0.01"
             min="0"
             required
-            defaultValue={transaction?.amount ?? ""}
+            value={amount}
+            onChange={(e) => handleAmountChange(e.target.value)}
             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
           />
         </div>
