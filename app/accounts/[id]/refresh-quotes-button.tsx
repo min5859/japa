@@ -9,9 +9,11 @@ import { refreshQuotesForAccount } from "@/lib/quotes/refresh";
 export function RefreshQuotesButton({ accountId }: { accountId: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(
-    null,
-  );
+  const [msg, setMsg] = useState<
+    | { kind: "ok"; text: string }
+    | { kind: "err"; text: string; failed?: Array<{ ticker: string; reason: string }> }
+    | null
+  >(null);
 
   function handleClick() {
     setMsg(null);
@@ -31,14 +33,31 @@ export function RefreshQuotesButton({ accountId }: { accountId: string }) {
           text: `✓ ${r.updated}종목 갱신 완료 (${time})`,
         });
       } else {
-        const failedList = r.failed.map((f) => f.ticker).join(", ");
         setMsg({
           kind: "err",
-          text: `${r.updated}종목 성공, ${r.failed.length}종목 실패: ${failedList}`,
+          text: `${r.updated}종목 성공, ${r.failed.length}종목 실패`,
+          failed: r.failed,
         });
       }
       router.refresh();
     });
+  }
+
+  function reasonHint(reason: string): string {
+    const r = reason.toLowerCase();
+    if (r.startsWith("not_found")) {
+      return "Yahoo에서 못 찾음 — 티커 또는 시장(KR/US/JP) 설정을 확인하세요";
+    }
+    if (r.startsWith("rate_limited")) {
+      return "Yahoo 호출 제한 — 잠시 후 다시 시도";
+    }
+    if (r.startsWith("network")) {
+      return "네트워크/타임아웃 — 다시 시도";
+    }
+    if (r.startsWith("parse")) {
+      return "응답 형식 오류 — 보고 필요";
+    }
+    return reason;
   }
 
   return (
@@ -52,7 +71,7 @@ export function RefreshQuotesButton({ accountId }: { accountId: string }) {
         {pending ? "갱신 중..." : "🔄 시세 갱신"}
       </button>
       {msg && (
-        <p
+        <div
           role={msg.kind === "err" ? "alert" : "status"}
           className={
             "max-w-md text-right text-xs " +
@@ -61,8 +80,21 @@ export function RefreshQuotesButton({ accountId }: { accountId: string }) {
               : "text-red-700 dark:text-red-400")
           }
         >
-          {msg.text}
-        </p>
+          <p>{msg.text}</p>
+          {msg.kind === "err" && msg.failed && msg.failed.length > 0 && (
+            <ul className="mt-1 space-y-0.5">
+              {msg.failed.map((f) => (
+                <li key={f.ticker} className="text-[11px]">
+                  <span className="font-mono font-medium">{f.ticker}</span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    {" "}
+                    — {reasonHint(f.reason)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

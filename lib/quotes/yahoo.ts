@@ -16,11 +16,26 @@ export type YahooFetchResult =
   | { ok: false; reason: "not_found" | "rate_limited" | "network" | "parse"; detail?: string };
 
 const TIMEOUT_MS = 30_000;
+const RATE_LIMIT_BACKOFF_MS = 5_000;
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 export async function fetchYahooQuote(
+  symbol: string,
+): Promise<YahooFetchResult> {
+  // 429 발생 시 1회 백오프 재시도 (Plan §8 rate limit 정책)
+  const first = await fetchYahooQuoteOnce(symbol);
+  if (first.ok || first.reason !== "rate_limited") return first;
+  await sleep(RATE_LIMIT_BACKOFF_MS);
+  return fetchYahooQuoteOnce(symbol);
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((res) => setTimeout(res, ms));
+}
+
+async function fetchYahooQuoteOnce(
   symbol: string,
 ): Promise<YahooFetchResult> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(

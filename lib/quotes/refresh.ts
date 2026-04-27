@@ -56,8 +56,15 @@ export async function refreshQuotesForAccount(
   const admin = createSupabaseAdminClient();
   const failed: Array<{ ticker: string; reason: string }> = [];
   let updated = 0;
+  const INTER_TICKER_DELAY_MS = 200; // burst 차단 회피
 
-  for (const h of holdings) {
+  for (let i = 0; i < holdings.length; i += 1) {
+    const h = holdings[i];
+    if (i > 0) {
+      await new Promise<void>((res) =>
+        setTimeout(res, INTER_TICKER_DELAY_MS),
+      );
+    }
     const candidates = toYahooSymbols(h.ticker, h.market);
     if (candidates.length === 0) {
       failed.push({ ticker: h.ticker, reason: "심볼 변환 실패" });
