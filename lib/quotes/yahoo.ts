@@ -16,7 +16,11 @@ export type YahooFetchResult =
   | { ok: false; reason: "not_found" | "rate_limited" | "network" | "parse"; detail?: string };
 
 const TIMEOUT_MS = 30_000;
-const RATE_LIMIT_BACKOFF_MS = 5_000;
+const RATE_LIMIT_BACKOFF_MS = 8_000;
+const HOSTS = [
+  "https://query1.finance.yahoo.com",
+  "https://query2.finance.yahoo.com",
+];
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -24,11 +28,26 @@ const USER_AGENT =
 export async function fetchYahooQuote(
   symbol: string,
 ): Promise<YahooFetchResult> {
-  // 429 발생 시 1회 백오프 재시도 (Plan §8 rate limit 정책)
-  const first = await fetchYahooQuoteOnce(symbol);
-  if (first.ok || first.reason !== "rate_limited") return first;
-  await sleep(RATE_LIMIT_BACKOFF_MS);
-  return fetchYahooQuoteOnce(symbol);
+  // 1차: query1 시도
+  const first = await fetchYahooQuoteOnce(symbol, HOSTS[0]);
+  if (first.ok) return first;
+  // not_found는 호스트 바꿔도 결과 같음
+  if (first.reason === "not_found") return first;
+
+  // 2차: 429이면 백오프 후 query2로 재시도 (TLS 지문/host 분산 효과)
+  if (first.reason === "rate_limited") {
+    await sleep(RATE_LIMIT_BACKOFF_MS);
+    const second = await fetchYahooQuoteOnce(symbol, HOSTS[1]);
+    if (second.ok) return second;
+    if (second.reason === "rate_limited") {
+      // 마지막 한 번 더 query1 백오프 재시도
+      await sleep(RATE_LIMIT_BACKOFF_MS);
+      return fetchYahooQuoteOnce(symbol, HOSTS[0]);
+    }
+    return second;
+  }
+  // network/parse — 호스트 바꿔도 비슷할 가능성 크지만 한번 더 시도
+  return fetchYahooQuoteOnce(symbol, HOSTS[1]);
 }
 
 function sleep(ms: number) {
@@ -37,8 +56,9 @@ function sleep(ms: number) {
 
 async function fetchYahooQuoteOnce(
   symbol: string,
+  host: string,
 ): Promise<YahooFetchResult> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+  const url = `${host}/v8/finance/chart/${encodeURIComponent(
     symbol,
   )}?interval=1d&range=5d`;
 
@@ -50,8 +70,16 @@ async function fetchYahooQuoteOnce(
     res = await fetch(url, {
       method: "GET",
       headers: {
+        // 브라우저 fetch처럼 보이게 — 단순 UA만으로는 Yahoo 봇 감지에 걸림
         "User-Agent": USER_AGENT,
-        Accept: "application/json",
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9,ko-KR;q=0.8,ko;q=0.7",
+        "Accept-Encoding": "gzip, deflate, br",
+        Origin: "https://finance.yahoo.com",
+        Referer: "https://finance.yahoo.com/",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
       },
       signal: ctrl.signal,
       cache: "no-store",
