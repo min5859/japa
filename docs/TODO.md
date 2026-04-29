@@ -131,6 +131,23 @@
 ### F8. 백테스트 (Phase 4)
 - 과거 자산 배분의 가상 수익률
 
+### F9. 시장 지표 대시보드 (인덱스·환율·금리)
+- **상태**: 미구현 — Phase 1 Step 7 본 대시보드와 별도 모듈 또는 하단 섹션
+- **목적**: 본인 자산 외에 **시장 컨텍스트**를 한 화면에서 확인 → 매수·매도 타이밍 감각, 환율 영향 추적
+- **데이터 소스**: 이미 도입된 `yahoo-finance2` 그대로 사용 (별도 의존성 0)
+  - `yahooFinance.quote(symbol)` → 현재가·전일종가
+  - `yahooFinance.chart(symbol, { period1, period2, interval: "1d" })` → 1년치 일봉
+- **표시 심볼 (asset-dashboard 참고)**:
+  - 환율: `USDKRW=X`, `EURKRW=X`, (필요 시 `JPYKRW=X`)
+  - 지수: `^KS11`(KOSPI), `^KQ11`(KOSDAQ), `^GSPC`(S&P500), `^IXIC`(NASDAQ), `^DJI`(다우), `^N225`(닛케이)
+  - 금리: `^TNX`(미국 10년물 국채)
+- **UI 구성안**:
+  - 카드형 그리드: 심볼·현재값·전일대비·등락률 + 미니 1년 라인차트 (Recharts `LineChart`)
+  - 환율 카드는 자산 평가 환산값에 직접 영향 → 대시보드 상단 고정
+- **데이터 갱신**: Step 7의 `/api/prices/refresh` 또는 별도 `/api/market/refresh`. `price_cache` 테이블에 동일 스키마로 저장 (ticker만 위 심볼들이 들어가는 형태)
+- **트리거**: Step 7 본 대시보드 1차 완성 직후 (~Phase 1 마무리)
+- **참고**: 다른 PC의 `asset-dashboard/lib/market.ts` 구조 일부 차용 가능
+
 ---
 
 ## 🛠 기술 부채·정리
