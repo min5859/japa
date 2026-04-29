@@ -17,22 +17,20 @@
 - **트리거**: 쿼리 빌더 매핑이 복잡해지거나 N+1 문제가 자주 생길 때
 - **참고**: 결정 기록은 본 대화 로그 (2026-04-26)
 
-### A2. 시세 연동 — Python yfinance 사이드카로 전환 검토
-- **상태**: 보류 — Phase 1은 **Yahoo v8 직접 호출 (Node fetch)** 채택 (2026-04-27 확정)
-- **결정 근거 (2026-04-27)**:
-  - 1인 + 보유 종목 수 제한 → 커버리지 문제 거의 없음
-  - Vercel 단일 호스팅으로 Phase 2 인프라 단순화
-  - 단순함 우선 원칙 (CLAUDE.md)
-- **재검토 트리거**:
-  - Yahoo v8 비공식 엔드포인트가 차단·스펙 변경되어 다수 종목이 실패
-  - 보유 종목이 50개 이상으로 증가
-  - 배당 이력·분할·재무제표 등 yfinance 고유 데이터가 필요해질 때 (Phase 3 AI 코치 고도화 시점)
-  - 한국 코스닥 등 일부 종목이 v8에서 데이터 누락 빈번
-- **전환 방법 (해당 시점에)**:
-  - FastAPI + `yfinance` 단일 컨테이너 (Railway $5/월 또는 Fly.io 무료 티어)
-  - Next.js → 내부 HTTP로 사이드카 호출
-  - `price_cache` 스키마는 그대로 유지 (소스만 교체)
-- **참고**: `docs/01-plan/phase-1-mvp-plan.md` §8
+### A2. ✅ 해결됨 — yahoo-finance2 npm 라이브러리 도입 (2026-04-29)
+- **최종 결정**: Python yfinance 사이드카 대신 **yahoo-finance2 npm 라이브러리**로 전환
+- **경과**:
+  - 2026-04-27: Yahoo v8 직접 호출(Node fetch) 채택
+  - 2026-04-28: HTTP 429 빈발 → 백오프 + 멀티 호스트 + 풀 브라우저 헤더 추가
+  - 2026-04-29 (오전): 위 보강에도 100% 429 재현. IP 차단으로 의심
+  - 2026-04-29 (오후): 진단 결과 — IP 차단이 아니라 **Node OpenSSL의 TLS ClientHello fingerprint(JA3) 가 Yahoo 봇 감지에 잡히는 것**이 원인. 풀 브라우저 헤더는 오히려 트리거를 강화하던 상태
+  - `child_process` curl spawn으로 우회 시도 → TLS 문제는 해결되지만 IP rate limit에 별개로 노출
+  - **최종**: 다른 자산관리 프로젝트(asset-dashboard)에서 동작 검증된 `yahoo-finance2` 라이브러리(v3.14.0)로 전환. crumb/cookie 인증과 다중 endpoint fallback이 라이브러리 내부에서 처리됨
+- **장점**:
+  - Python·외부 프로세스 의존성 0
+  - Vercel 단일 호스팅 유지 (Phase 2 배포 단순)
+  - 한국 종목 `.KS`/`.KQ` 자동 처리, 배당·재무 부가 데이터 가용
+- **참고**: `lib/quotes/yahoo.ts`, `docs/01-plan/features/yahoo-quotes.plan.md` §3·6
 
 ### A3. Vercel AI SDK 도입 검토
 - **상태**: 직접 추상화 레이어로 구현 예정 (Phase 3 진입 시)

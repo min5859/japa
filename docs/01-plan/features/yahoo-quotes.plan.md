@@ -1,4 +1,11 @@
-# Step 6 — Yahoo Finance 시세 연동 (v8 직접 호출)
+# Step 6 — Yahoo Finance 시세 연동 (yahoo-finance2 라이브러리)
+
+> 2026-04-29 갱신: v8 endpoint 직접 호출은 Node TLS fingerprint 차단 문제로
+> 폐기. `yahoo-finance2` npm 라이브러리(v3.14.0)로 전환. 자세한 경과는
+> `docs/TODO.md` A2 참조. 본 문서의 §3·§6 호출 다이어그램은 라이브러리 호출
+> 기준으로 읽되, 외부에 노출되는 `fetchYahooQuote(symbol)` /
+> `YahooFetchResult` 시그니처는 동일하게 유지된다.
+
 
 > 작성: 2026-04-28
 > 상태: Plan
