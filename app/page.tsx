@@ -5,7 +5,6 @@ import { getMarketIndices } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { RefreshPricesButton } from "@/components/refresh-prices-button";
 import { SaveSnapshotButton } from "@/components/save-snapshot-button";
 import { AllocationPieChart } from "@/components/charts/allocation-pie";
 import { NetWorthLineChart } from "@/components/charts/net-worth-line";
@@ -143,7 +142,6 @@ export default async function DashboardPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">계좌 목록</h2>
           <div className="flex items-center gap-2">
-            <RefreshPricesButton />
             <Button asChild size="sm">
               <Link href="/accounts/new">
                 <Plus className="h-4 w-4" />
