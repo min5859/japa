@@ -34,6 +34,24 @@ async function fetchQuotePrice(symbol: string): Promise<{ price: number | null; 
   }
 }
 
+/** Limit Yahoo concurrent requests; spike of 30+ parallel quotes intermittently produces missing fields. */
+const REFRESH_CONCURRENCY = 6;
+const REFRESH_RETRIES = 1;
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export type RefreshSymbolsResult = {
   prices: Map<string, number>;
   failed: { symbol: string; reason: string }[];
@@ -45,8 +63,9 @@ export async function refreshSymbols(symbols: string[]): Promise<RefreshSymbolsR
   const prices = new Map<string, number>();
   const failed: { symbol: string; reason: string }[] = [];
 
-  await Promise.allSettled(
-    unique.map(async (symbol) => {
+  await mapWithConcurrency(unique, REFRESH_CONCURRENCY, async (symbol) => {
+    let lastReason: string | undefined;
+    for (let attempt = 0; attempt <= REFRESH_RETRIES; attempt++) {
       const { price, reason } = await fetchQuotePrice(symbol);
       if (price !== null) {
         prices.set(symbol, price);
@@ -55,13 +74,17 @@ export async function refreshSymbols(symbols: string[]): Promise<RefreshSymbolsR
           update: { price, fetchedAt: new Date() },
           create: { symbol, price }
         });
-      } else {
-        const why = reason ?? "unknown";
-        console.warn(`[refreshSymbols] ${symbol} failed: ${why}`);
-        failed.push({ symbol, reason: why });
+        return;
       }
-    })
-  );
+      lastReason = reason;
+      if (attempt < REFRESH_RETRIES) {
+        await new Promise((r) => setTimeout(r, 250 * (attempt + 1)));
+      }
+    }
+    const why = lastReason ?? "unknown";
+    console.warn(`[refreshSymbols] ${symbol} failed after ${REFRESH_RETRIES + 1} attempts: ${why}`);
+    failed.push({ symbol, reason: why });
+  });
 
   return { prices, failed };
 }
