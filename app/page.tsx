@@ -182,9 +182,25 @@ export default async function DashboardPage() {
                     <p className="text-xl font-semibold">
                       {formatCurrency(account.totalValueBase)}
                     </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      보유 {account.holdings.length}종
-                    </p>
+                    <div className="mt-0.5 flex items-center justify-between gap-2 text-xs">
+                      <span className="text-muted-foreground">
+                        보유 {account.holdings.length}종
+                      </span>
+                      {account.unrealizedGainPercent !== null && (
+                        <span
+                          className={
+                            account.unrealizedGainBase > 0
+                              ? "font-medium text-red-500"
+                              : account.unrealizedGainBase < 0
+                                ? "font-medium text-blue-500"
+                                : "text-muted-foreground"
+                          }
+                        >
+                          {account.unrealizedGainPercent >= 0 ? "+" : ""}
+                          {account.unrealizedGainPercent.toFixed(2)}%
+                        </span>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </Link>

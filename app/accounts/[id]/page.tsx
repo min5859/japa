@@ -82,7 +82,7 @@ export default async function AccountDetailPage({
       </div>
 
       {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">총 평가액</CardTitle>
@@ -105,6 +105,35 @@ export default async function AccountDetailPage({
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(account.holdingsValueBase)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">평가손익</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {account.unrealizedGainPercent !== null ? (
+              <>
+                <p
+                  className={`text-2xl font-bold ${
+                    account.unrealizedGainBase > 0
+                      ? "text-red-500"
+                      : account.unrealizedGainBase < 0
+                        ? "text-blue-500"
+                        : ""
+                  }`}
+                >
+                  {account.unrealizedGainPercent >= 0 ? "+" : ""}
+                  {account.unrealizedGainPercent.toFixed(2)}%
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {account.unrealizedGainBase >= 0 ? "+" : ""}
+                  {formatCurrency(account.unrealizedGainBase)}
+                </p>
+              </>
+            ) : (
+              <p className="text-2xl font-bold text-muted-foreground">—</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -139,6 +168,7 @@ export default async function AccountDetailPage({
                     <th className="px-6 py-3 font-medium">자산</th>
                     <th className="px-6 py-3 font-medium">유형</th>
                     <th className="px-6 py-3 text-right font-medium">수량</th>
+                    <th className="px-6 py-3 text-right font-medium">현재가</th>
                     <th className="px-6 py-3 text-right font-medium">평가금액</th>
                     <th className="px-6 py-3 text-right font-medium">평가손익</th>
                     <th className="px-6 py-3"></th>
@@ -167,6 +197,18 @@ export default async function AccountDetailPage({
                         </td>
                         <td className="px-6 py-3 text-right">
                           {formatNumber(Number(holding.quantity), 4)}
+                        </td>
+                        <td className="px-6 py-3 text-right">
+                          {holding.currentPrice > 0 ? (
+                            <>
+                              <div>{formatCurrency(holding.currentPrice, holding.currency)}</div>
+                              {!holding.usingLivePrice && holding.symbol && (
+                                <div className="text-[10px] text-muted-foreground">수동</div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-6 py-3 text-right font-medium">
                           {formatCurrency(holding.marketValueBase)}

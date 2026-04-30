@@ -18,6 +18,7 @@ export type HoldingValue = Omit<
   marketValueBase: number;
   unrealizedGainBase: number;
   unrealizedGainPercent: number | null;
+  currentPrice: number;
   usingLivePrice: boolean;
 };
 
@@ -27,6 +28,9 @@ export type AccountValue = Omit<Account, "cashBalance" | "annualContributionLimi
   holdings: HoldingValue[];
   cashValueBase: number;
   holdingsValueBase: number;
+  holdingsCostBasisBase: number;
+  unrealizedGainBase: number;
+  unrealizedGainPercent: number | null;
   liabilitiesBase: number;
   totalValueBase: number;
 };
@@ -80,6 +84,7 @@ export function enrichHolding(holding: Holding, ctx?: PriceContext): HoldingValu
     marketValueBase,
     unrealizedGainBase,
     unrealizedGainPercent,
+    currentPrice: price,
     usingLivePrice: livePrice !== undefined
   };
 }
@@ -89,6 +94,10 @@ export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext):
   const cashValueBase = toNumber(account.cashBalance) * fxRate;
   const holdings = account.holdings.map((h) => enrichHolding(h, ctx));
   const holdingsValueBase = holdings.reduce((total, h) => total + h.marketValueBase, 0);
+  const holdingsCostBasisBase = holdings.reduce((total, h) => total + h.costBasisBase, 0);
+  const unrealizedGainBase = holdingsValueBase - holdingsCostBasisBase;
+  const unrealizedGainPercent =
+    holdingsCostBasisBase > 0 ? (unrealizedGainBase / holdingsCostBasisBase) * 100 : null;
   const isLiability = account.type === "CREDIT" || account.type === "LOAN";
   const accountValue = cashValueBase + holdingsValueBase;
 
@@ -102,6 +111,9 @@ export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext):
     holdings,
     cashValueBase,
     holdingsValueBase,
+    holdingsCostBasisBase,
+    unrealizedGainBase,
+    unrealizedGainPercent,
     liabilitiesBase: isLiability ? Math.abs(accountValue) : 0,
     totalValueBase: isLiability ? -Math.abs(accountValue) : accountValue
   };

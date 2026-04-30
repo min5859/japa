@@ -55,6 +55,7 @@ export default async function HoldingsPage() {
                   <th className="px-6 py-3 font-medium">계좌</th>
                   <th className="px-6 py-3 font-medium">유형</th>
                   <th className="px-6 py-3 text-right font-medium">수량</th>
+                  <th className="px-6 py-3 text-right font-medium">현재가</th>
                   <th className="px-6 py-3 text-right font-medium">평가금액</th>
                   <th className="px-6 py-3 text-right font-medium">평가손익</th>
                   <th className="px-6 py-3"></th>
@@ -90,6 +91,18 @@ export default async function HoldingsPage() {
                       </td>
                       <td className="px-6 py-3 text-right">
                         {formatNumber(Number(holding.quantity), 4)}
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        {holding.currentPrice > 0 ? (
+                          <>
+                            <div>{formatCurrency(holding.currentPrice, holding.currency)}</div>
+                            {!holding.usingLivePrice && holding.symbol && (
+                              <div className="text-[10px] text-muted-foreground">수동</div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-3 text-right font-medium">
                         {formatCurrency(holding.marketValueBase)}
