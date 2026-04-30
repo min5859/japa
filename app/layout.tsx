@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: "Single-user asset dashboard for manual portfolio tracking."
 };
 
+export const dynamic = "force-dynamic";
+
 const navigation = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/accounts", label: "Accounts", icon: Landmark },
