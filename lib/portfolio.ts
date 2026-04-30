@@ -17,6 +17,7 @@ export type HoldingValue = Omit<
   costBasisBase: number;
   marketValueBase: number;
   unrealizedGainBase: number;
+  unrealizedGainPercent: number | null;
   usingLivePrice: boolean;
 };
 
@@ -64,6 +65,9 @@ export function enrichHolding(holding: Holding, ctx?: PriceContext): HoldingValu
 
   const costBasisBase = quantity * averageCost * costFxRate;
   const marketValueBase = quantity * price * fxRate;
+  const unrealizedGainBase = marketValueBase - costBasisBase;
+  const unrealizedGainPercent =
+    costBasisBase > 0 ? (unrealizedGainBase / costBasisBase) * 100 : null;
 
   return {
     ...holding,
@@ -74,7 +78,8 @@ export function enrichHolding(holding: Holding, ctx?: PriceContext): HoldingValu
     dividendYield: holding.dividendYield != null ? toNumber(holding.dividendYield) : null,
     costBasisBase,
     marketValueBase,
-    unrealizedGainBase: marketValueBase - costBasisBase,
+    unrealizedGainBase,
+    unrealizedGainPercent,
     usingLivePrice: livePrice !== undefined
   };
 }

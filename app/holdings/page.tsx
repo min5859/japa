@@ -95,8 +95,16 @@ export default async function HoldingsPage() {
                         {formatCurrency(holding.marketValueBase)}
                       </td>
                       <td className={`px-6 py-3 text-right font-medium ${gainColor}`}>
-                        {holding.unrealizedGainBase >= 0 ? "+" : ""}
-                        {formatCurrency(holding.unrealizedGainBase)}
+                        <div>
+                          {holding.unrealizedGainBase >= 0 ? "+" : ""}
+                          {formatCurrency(holding.unrealizedGainBase)}
+                        </div>
+                        {holding.unrealizedGainPercent !== null && (
+                          <div className="text-xs">
+                            {holding.unrealizedGainPercent >= 0 ? "+" : ""}
+                            {holding.unrealizedGainPercent.toFixed(2)}%
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-3">
                         <Button asChild size="sm" variant="ghost">
