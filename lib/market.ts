@@ -19,44 +19,63 @@ export function fxSymbol(currency: Currency): string | undefined {
   return FX_SYMBOLS[currency];
 }
 
-async function fetchQuotePrice(symbol: string): Promise<number | null> {
+async function fetchQuotePrice(symbol: string): Promise<{ price: number | null; reason?: string }> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await yahooFinance.quote(symbol);
-    return (result?.regularMarketPrice as number | undefined) ?? null;
-  } catch {
-    return null;
+    const price = result?.regularMarketPrice as number | undefined;
+    if (price == null || !Number.isFinite(price)) {
+      return { price: null, reason: `no regularMarketPrice (got ${price})` };
+    }
+    return { price };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { price: null, reason: msg };
   }
 }
 
+export type RefreshSymbolsResult = {
+  prices: Map<string, number>;
+  failed: { symbol: string; reason: string }[];
+};
+
 /** Fetch live prices for a list of symbols and upsert into PriceCache. */
-export async function refreshSymbols(symbols: string[]): Promise<Map<string, number>> {
+export async function refreshSymbols(symbols: string[]): Promise<RefreshSymbolsResult> {
   const unique = [...new Set(symbols.filter(Boolean))];
-  const priceMap = new Map<string, number>();
+  const prices = new Map<string, number>();
+  const failed: { symbol: string; reason: string }[] = [];
 
   await Promise.allSettled(
     unique.map(async (symbol) => {
-      const price = await fetchQuotePrice(symbol);
+      const { price, reason } = await fetchQuotePrice(symbol);
       if (price !== null) {
-        priceMap.set(symbol, price);
+        prices.set(symbol, price);
         await prisma.priceCache.upsert({
           where: { symbol },
           update: { price, fetchedAt: new Date() },
           create: { symbol, price }
         });
+      } else {
+        const why = reason ?? "unknown";
+        console.warn(`[refreshSymbols] ${symbol} failed: ${why}`);
+        failed.push({ symbol, reason: why });
       }
     })
   );
 
-  return priceMap;
+  return { prices, failed };
 }
 
 /** Collect all symbols (holdings + FX) that need refreshing and update cache. */
-export async function refreshAllPrices(): Promise<{ updated: number }> {
+export async function refreshAllPrices(): Promise<{
+  updated: number;
+  attempted: number;
+  failed: { symbol: string; reason: string }[];
+  skippedNoSymbol: { id: string; name: string }[];
+}> {
   const [holdings, accounts] = await Promise.all([
     prisma.holding.findMany({
-      select: { symbol: true, currency: true },
-      distinct: ["symbol", "currency"]
+      select: { id: true, name: true, symbol: true, currency: true }
     }),
     prisma.account.findMany({
       select: { currency: true },
@@ -65,10 +84,19 @@ export async function refreshAllPrices(): Promise<{ updated: number }> {
   ]);
 
   const symbols: string[] = [];
+  const symbolSet = new Set<string>();
   const fxAdded = new Set<string>();
+  const skippedNoSymbol: { id: string; name: string }[] = [];
 
   for (const h of holdings) {
-    if (h.symbol) symbols.push(h.symbol);
+    if (h.symbol) {
+      if (!symbolSet.has(h.symbol)) {
+        symbols.push(h.symbol);
+        symbolSet.add(h.symbol);
+      }
+    } else {
+      skippedNoSymbol.push({ id: h.id, name: h.name });
+    }
     if (h.currency !== "KRW") {
       const fx = FX_SYMBOLS[h.currency];
       if (fx && !fxAdded.has(fx)) { symbols.push(fx); fxAdded.add(fx); }
@@ -82,8 +110,13 @@ export async function refreshAllPrices(): Promise<{ updated: number }> {
     }
   }
 
-  const priceMap = await refreshSymbols(symbols);
-  return { updated: priceMap.size };
+  const { prices, failed } = await refreshSymbols(symbols);
+  return {
+    updated: prices.size,
+    attempted: symbols.length,
+    failed,
+    skippedNoSymbol
+  };
 }
 
 // ─── Market Indices ───────────────────────────────────────────────────────────
