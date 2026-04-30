@@ -66,7 +66,23 @@ export default async function AccountsPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xl font-semibold">{formatCurrency(account.totalValueBase)}</p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="text-xl font-semibold">{formatCurrency(account.totalValueBase)}</p>
+                    {account.unrealizedGainPercent !== null && (
+                      <span
+                        className={`text-sm font-medium ${
+                          account.unrealizedGainBase > 0
+                            ? "text-red-500"
+                            : account.unrealizedGainBase < 0
+                              ? "text-blue-500"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {account.unrealizedGainPercent >= 0 ? "+" : ""}
+                        {account.unrealizedGainPercent.toFixed(2)}%
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
                     <span>현금 {formatCurrency(account.cashValueBase)}</span>
                     <span>보유 {account.holdings.length}종</span>
