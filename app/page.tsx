@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { getPortfolio, getSnapshots } from "@/lib/data";
 import { getMarketIndices } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -207,6 +207,30 @@ export default async function DashboardPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Data export */}
+      <div>
+        <h2 className="mb-3 text-lg font-semibold">데이터 내보내기</h2>
+        <Card>
+          <CardContent className="flex flex-wrap gap-2 pt-5">
+            {[
+              { type: "accounts", label: "계좌 CSV" },
+              { type: "holdings", label: "보유 CSV" },
+              { type: "snapshots", label: "스냅샷 CSV" }
+            ].map(({ type, label }) => (
+              <a
+                key={type}
+                href={`/api/export/${type}`}
+                download
+                className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary hover:text-primary"
+              >
+                <Download className="h-4 w-4" />
+                {label}
+              </a>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
