@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Account" ADD COLUMN "contributionYTD" DECIMAL(18,4) NOT NULL DEFAULT 0;

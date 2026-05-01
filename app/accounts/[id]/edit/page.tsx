@@ -17,7 +17,8 @@ export default async function EditAccountPage({
     ...accountFields,
     cashBalance: Number(account.cashBalance),
     annualContributionLimit:
-      account.annualContributionLimit != null ? Number(account.annualContributionLimit) : null
+      account.annualContributionLimit != null ? Number(account.annualContributionLimit) : null,
+    contributionYTD: Number(account.contributionYTD)
   };
 
   return (

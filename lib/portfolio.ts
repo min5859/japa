@@ -22,9 +22,10 @@ export type HoldingValue = Omit<
   usingLivePrice: boolean;
 };
 
-export type AccountValue = Omit<Account, "cashBalance" | "annualContributionLimit"> & {
+export type AccountValue = Omit<Account, "cashBalance" | "annualContributionLimit" | "contributionYTD"> & {
   cashBalance: number;
   annualContributionLimit: number | null;
+  contributionYTD: number;
   holdings: HoldingValue[];
   cashValueBase: number;
   holdingsValueBase: number;
@@ -108,6 +109,7 @@ export function enrichAccount(account: AccountWithHoldings, ctx?: PriceContext):
       account.annualContributionLimit != null
         ? toNumber(account.annualContributionLimit)
         : null,
+    contributionYTD: toNumber(account.contributionYTD),
     holdings,
     cashValueBase,
     holdingsValueBase,

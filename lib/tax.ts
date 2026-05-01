@@ -138,7 +138,7 @@ export function calcTaxAdvantaged(
     if (!account.isTaxAdvantaged) continue;
     const totalValue = account.totalValueBase;
     const limit = account.annualContributionLimit;
-    const used = totalValue > 0 ? totalValue : 0;
+    const used = Math.max(0, account.contributionYTD);
     const remaining = limit != null ? Math.max(0, limit - used) : null;
     const usageRatio = limit != null && limit > 0 ? used / limit : null;
 

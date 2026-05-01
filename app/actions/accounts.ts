@@ -21,6 +21,7 @@ const AccountSchema = z.object({
   cashBalance: z.coerce.number().default(0),
   isTaxAdvantaged: z.boolean().default(false),
   annualContributionLimit: z.coerce.number().nullable().optional(),
+  contributionYTD: z.coerce.number().default(0),
   notes: z.string().optional()
 });
 
@@ -29,6 +30,7 @@ export type AccountActionState = { error: string | null };
 function parseFormData(formData: FormData) {
   const isTaxAdvantaged = formData.get("isTaxAdvantaged") === "true";
   const annualLimit = formData.get("annualContributionLimit");
+  const ytd = formData.get("contributionYTD");
   return {
     name: formData.get("name"),
     institution: formData.get("institution") || undefined,
@@ -37,6 +39,7 @@ function parseFormData(formData: FormData) {
     cashBalance: formData.get("cashBalance") || "0",
     isTaxAdvantaged,
     annualContributionLimit: isTaxAdvantaged && annualLimit ? annualLimit : null,
+    contributionYTD: isTaxAdvantaged && ytd ? ytd : 0,
     notes: formData.get("notes") || undefined
   };
 }

@@ -35,10 +35,11 @@ type ActionFn = (state: AccountActionState, formData: FormData) => Promise<Accou
 
 export type AccountDefaults = Omit<
   Partial<Account>,
-  "cashBalance" | "annualContributionLimit"
+  "cashBalance" | "annualContributionLimit" | "contributionYTD"
 > & {
   cashBalance?: number | string | null;
   annualContributionLimit?: number | string | null;
+  contributionYTD?: number | string | null;
 };
 
 export function AccountForm({
@@ -132,16 +133,32 @@ export function AccountForm({
       </div>
 
       {isTaxAdvantaged && (
-        <div className="space-y-2">
-          <Label htmlFor="annualContributionLimit">연간 납입 한도 (원)</Label>
-          <Input
-            id="annualContributionLimit"
-            name="annualContributionLimit"
-            type="number"
-            step="1"
-            placeholder="예: 4000000"
-            defaultValue={defaultValues?.annualContributionLimit?.toString() ?? ""}
-          />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="annualContributionLimit">연간 납입 한도 (원)</Label>
+            <Input
+              id="annualContributionLimit"
+              name="annualContributionLimit"
+              type="number"
+              step="1"
+              placeholder="예: 4000000"
+              defaultValue={defaultValues?.annualContributionLimit?.toString() ?? ""}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contributionYTD">올해 납입액 (원)</Label>
+            <Input
+              id="contributionYTD"
+              name="contributionYTD"
+              type="number"
+              step="1"
+              placeholder="0"
+              defaultValue={defaultValues?.contributionYTD?.toString() ?? "0"}
+            />
+            <p className="text-xs text-muted-foreground">
+              매년 1월 1일 0으로 초기화하세요.
+            </p>
+          </div>
         </div>
       )}
 

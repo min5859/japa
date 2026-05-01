@@ -274,7 +274,7 @@ export default async function TaxPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">현재 잔액</span>
+                    <span className="text-muted-foreground">올해 납입액</span>
                     <span className="font-medium">{formatCurrency(acc.used)}</span>
                   </div>
                   {acc.limit != null && (
