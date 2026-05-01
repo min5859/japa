@@ -232,16 +232,25 @@ export async function refreshMarketHistory(): Promise<void> {
         });
         const quotes = result?.quotes ?? [];
         if (!quotes.length) return;
-        await prisma.$transaction(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          quotes.filter((r: any) => r.close != null).map((r: any) =>
-            prisma.marketIndexHistory.upsert({
-              where: { symbol_date: { symbol, date: new Date(r.date) } },
-              update: { open: r.open ?? r.close, high: r.high ?? r.close, low: r.low ?? r.close, close: r.close },
-              create: { symbol, date: new Date(r.date), open: r.open ?? r.close, high: r.high ?? r.close, low: r.low ?? r.close, close: r.close }
-            })
-          )
-        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = quotes.filter((r: any) => r.close != null).map((r: any) => ({
+          symbol,
+          date: new Date(r.date),
+          open: r.open ?? r.close,
+          high: r.high ?? r.close,
+          low: r.low ?? r.close,
+          close: r.close
+        }));
+        if (!data.length) return;
+        // Historical OHLC for past dates is immutable, so skipDuplicates is safe;
+        // today's row gets refreshed by overwriting via a targeted upsert.
+        const today = data[data.length - 1];
+        await prisma.marketIndexHistory.createMany({ data, skipDuplicates: true });
+        await prisma.marketIndexHistory.upsert({
+          where: { symbol_date: { symbol, date: today.date } },
+          update: { open: today.open, high: today.high, low: today.low, close: today.close },
+          create: today
+        });
       } catch (e) {
         console.error(`[MarketHistory] ${symbol} failed:`, e);
       }
