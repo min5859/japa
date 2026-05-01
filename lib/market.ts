@@ -153,6 +153,7 @@ const INDICES_CONFIG = [
   { symbol: "^N225",    name: "닛케이",      currency: "JPY", isYield: false },
   { symbol: "USDKRW=X", name: "달러/원",     currency: "KRW", isYield: false },
   { symbol: "^TNX",     name: "미국채 10Y",  currency: "USD", isYield: true  },
+  { symbol: "CL=F",     name: "WTI 원유",    currency: "USD", isYield: false },
 ] as const;
 
 export type MarketIndexRow = {
