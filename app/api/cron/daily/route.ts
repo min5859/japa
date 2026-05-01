@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { refreshMarketHistory } from "@/lib/market";
+import { refreshAllPrices, refreshMarketHistory, refreshMarketIndices } from "@/lib/market";
 import { createSnapshot } from "@/lib/snapshot";
 
 export const maxDuration = 60;
@@ -23,8 +23,16 @@ export async function GET(request: NextRequest) {
 
   const ran: string[] = [];
 
-  await refreshMarketHistory();
-  ran.push("marketHistory");
+  const [portfolio, indicesUpdated] = await Promise.all([
+    refreshAllPrices(),
+    refreshMarketIndices(),
+    refreshMarketHistory()
+  ]);
+  ran.push(
+    `portfolioPrices(${portfolio.updated}/${portfolio.attempted})`,
+    `indices(${indicesUpdated})`,
+    "marketHistory"
+  );
 
   if (isFirstOfMonth) {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
