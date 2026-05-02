@@ -5,20 +5,10 @@ import { getMarketIndices } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { ACCOUNT_TYPE_LABELS } from "@/lib/labels";
 import { SaveSnapshotButton } from "@/components/save-snapshot-button";
 import { AllocationPieChart } from "@/components/charts/allocation-pie";
 import { NetWorthLineChart } from "@/components/charts/net-worth-line";
-
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  CHECKING: "입출금",
-  SAVINGS: "예금/적금",
-  BROKERAGE: "증권",
-  RETIREMENT: "퇴직연금",
-  TAX_ADVANTAGED: "세테크",
-  CREDIT: "신용카드",
-  LOAN: "대출",
-  OTHER: "기타"
-};
 
 function formatIndexValue(price: number, isYield: boolean, currency: string): string {
   if (isYield) return `${price.toFixed(2)}%`;

@@ -8,17 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { DividendActionState } from "@/app/actions/dividends";
-
-const CURRENCIES = [
-  { value: "KRW", label: "KRW - 원화" },
-  { value: "USD", label: "USD - 달러" },
-  { value: "EUR", label: "EUR - 유로" },
-  { value: "JPY", label: "JPY - 엔화" },
-  { value: "CNY", label: "CNY - 위안" },
-  { value: "GBP", label: "GBP - 파운드" },
-  { value: "HKD", label: "HKD - 홍콩달러" },
-  { value: "SGD", label: "SGD - 싱가포르달러" }
-];
+import { CURRENCIES } from "@/lib/labels";
 
 type AccountOption = { id: string; name: string; institution: string | null };
 type HoldingOption = {

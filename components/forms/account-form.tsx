@@ -8,28 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { AccountActionState } from "@/app/actions/accounts";
-
-const ACCOUNT_TYPES = [
-  { value: "CHECKING", label: "입출금" },
-  { value: "SAVINGS", label: "예금/적금" },
-  { value: "BROKERAGE", label: "증권" },
-  { value: "RETIREMENT", label: "퇴직연금" },
-  { value: "TAX_ADVANTAGED", label: "세테크" },
-  { value: "CREDIT", label: "신용카드" },
-  { value: "LOAN", label: "대출" },
-  { value: "OTHER", label: "기타" }
-];
-
-const CURRENCIES = [
-  { value: "KRW", label: "KRW - 원화" },
-  { value: "USD", label: "USD - 달러" },
-  { value: "EUR", label: "EUR - 유로" },
-  { value: "JPY", label: "JPY - 엔화" },
-  { value: "CNY", label: "CNY - 위안" },
-  { value: "GBP", label: "GBP - 파운드" },
-  { value: "HKD", label: "HKD - 홍콩달러" },
-  { value: "SGD", label: "SGD - 싱가포르달러" }
-];
+import { ACCOUNT_TYPES, CURRENCIES } from "@/lib/labels";
 
 type ActionFn = (state: AccountActionState, formData: FormData) => Promise<AccountActionState>;
 

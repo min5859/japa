@@ -5,14 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuoteSearchForm } from "@/components/quote-search-form";
 import { MarketChart } from "@/components/market-chart";
-
-const QUOTE_TYPE_LABELS: Record<string, string> = {
-  EQUITY: "주식",
-  ETF: "ETF",
-  MUTUALFUND: "펀드",
-  CRYPTOCURRENCY: "암호화폐",
-  CURRENCY: "통화"
-};
+import { QUOTE_TYPE_LABELS } from "@/lib/labels";
 
 /** Tickers we can look up directly without going through search. */
 function looksLikeTicker(input: string): boolean {

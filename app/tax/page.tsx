@@ -4,6 +4,7 @@ import { calcDividendIncome, calcForeignGains, calcTaxAdvantaged } from "@/lib/t
 import { getReceivedDividendTotals } from "@/lib/dividends";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { ASSET_CLASS_LABELS } from "@/lib/labels";
 
 function ProgressBar({ ratio, warn }: { ratio: number; warn: boolean }) {
   const pct = Math.min(ratio * 100, 100);
@@ -16,11 +17,6 @@ function ProgressBar({ ratio, warn }: { ratio: number; warn: boolean }) {
     </div>
   );
 }
-
-const ASSET_CLASS_LABELS: Record<string, string> = {
-  INTERNATIONAL_STOCK: "해외주식",
-  CRYPTO: "암호화폐"
-};
 
 export default async function TaxPage() {
   const currentYear = new Date().getUTCFullYear();

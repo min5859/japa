@@ -8,30 +8,7 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import { deleteAccount } from "@/app/actions/accounts";
 import { deleteHolding } from "@/app/actions/holdings";
 import { DeleteButton } from "@/components/delete-button";
-
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  CHECKING: "입출금",
-  SAVINGS: "예금/적금",
-  BROKERAGE: "증권",
-  RETIREMENT: "퇴직연금",
-  TAX_ADVANTAGED: "세테크",
-  CREDIT: "신용카드",
-  LOAN: "대출",
-  OTHER: "기타"
-};
-
-const ASSET_CLASS_LABELS: Record<string, string> = {
-  CASH: "현금",
-  DOMESTIC_STOCK: "국내주식",
-  INTERNATIONAL_STOCK: "해외주식",
-  ETF: "ETF",
-  BOND: "채권",
-  FUND: "펀드",
-  CRYPTO: "암호화폐",
-  REAL_ESTATE: "부동산",
-  LIABILITY: "부채",
-  OTHER: "기타"
-};
+import { ACCOUNT_TYPE_LABELS, ASSET_CLASS_LABELS } from "@/lib/labels";
 
 export default async function AccountDetailPage({
   params

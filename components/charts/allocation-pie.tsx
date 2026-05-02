@@ -1,25 +1,13 @@
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ASSET_CLASS_LABELS } from "@/lib/labels";
 
 const COLORS = [
   "#e50914", "#3b82f6", "#22c55e", "#f59e0b",
   "#a855f7", "#06b6d4", "#f97316", "#ec4899",
   "#64748b", "#84cc16"
 ];
-
-const ASSET_CLASS_LABELS: Record<string, string> = {
-  CASH: "현금",
-  DOMESTIC_STOCK: "국내주식",
-  INTERNATIONAL_STOCK: "해외주식",
-  ETF: "ETF",
-  BOND: "채권",
-  FUND: "펀드",
-  CRYPTO: "암호화폐",
-  REAL_ESTATE: "부동산",
-  LIABILITY: "부채",
-  OTHER: "기타"
-};
 
 export type AllocationEntry = { assetClass: string; value: number };
 

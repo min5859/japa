@@ -10,30 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { HoldingActionState } from "@/app/actions/holdings";
 import { lookupSymbolAction } from "@/app/actions/symbols";
-
-const ASSET_CLASSES = [
-  { value: "CASH", label: "현금" },
-  { value: "DOMESTIC_STOCK", label: "국내주식" },
-  { value: "INTERNATIONAL_STOCK", label: "해외주식" },
-  { value: "ETF", label: "ETF" },
-  { value: "BOND", label: "채권" },
-  { value: "FUND", label: "펀드" },
-  { value: "CRYPTO", label: "암호화폐" },
-  { value: "REAL_ESTATE", label: "부동산" },
-  { value: "LIABILITY", label: "부채" },
-  { value: "OTHER", label: "기타" }
-];
-
-const CURRENCIES = [
-  { value: "KRW", label: "KRW - 원화" },
-  { value: "USD", label: "USD - 달러" },
-  { value: "EUR", label: "EUR - 유로" },
-  { value: "JPY", label: "JPY - 엔화" },
-  { value: "CNY", label: "CNY - 위안" },
-  { value: "GBP", label: "GBP - 파운드" },
-  { value: "HKD", label: "HKD - 홍콩달러" },
-  { value: "SGD", label: "SGD - 싱가포르달러" }
-];
+import { ASSET_CLASSES, CURRENCIES } from "@/lib/labels";
 
 type AccountOption = { id: string; name: string; institution: string | null };
 type ActionFn = (state: HoldingActionState, formData: FormData) => Promise<HoldingActionState>;

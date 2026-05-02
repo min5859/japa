@@ -6,19 +6,7 @@ import { getPricesForPortfolio } from "@/lib/market";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-
-const ASSET_CLASS_LABELS: Record<string, string> = {
-  CASH: "현금",
-  DOMESTIC_STOCK: "국내주식",
-  INTERNATIONAL_STOCK: "해외주식",
-  ETF: "ETF",
-  BOND: "채권",
-  FUND: "펀드",
-  CRYPTO: "암호화폐",
-  REAL_ESTATE: "부동산",
-  LIABILITY: "부채",
-  OTHER: "기타"
-};
+import { ASSET_CLASS_LABELS } from "@/lib/labels";
 
 export default async function HoldingsPage() {
   const [rawHoldings, priceCtx] = await Promise.all([getAllHoldings(), getPricesForPortfolio()]);

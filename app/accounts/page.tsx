@@ -4,17 +4,7 @@ import { getPortfolio } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-
-const ACCOUNT_TYPE_LABELS: Record<string, string> = {
-  CHECKING: "입출금",
-  SAVINGS: "예금/적금",
-  BROKERAGE: "증권",
-  RETIREMENT: "퇴직연금",
-  TAX_ADVANTAGED: "세테크",
-  CREDIT: "신용카드",
-  LOAN: "대출",
-  OTHER: "기타"
-};
+import { ACCOUNT_TYPE_LABELS } from "@/lib/labels";
 
 export default async function AccountsPage() {
   const { accounts } = await getPortfolio();
