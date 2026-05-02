@@ -14,7 +14,7 @@ export function QuoteSearchForm({ defaultValue = "" }: { defaultValue?: string }
         name="symbol"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="티커 또는 6자리 코드 (예: AAPL, 005930)"
+        placeholder="회사명(영문), 티커, 6자리 코드 (예: samsung, AAPL, 005930)"
         className="flex-1"
         autoFocus
       />

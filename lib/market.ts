@@ -119,6 +119,45 @@ export async function lookupQuoteDetail(input: string): Promise<QuoteDetail | nu
   return tryQuoteDetail(code.toUpperCase());
 }
 
+export type SymbolSearchResult = {
+  symbol: string;
+  name: string;
+  exchange: string;
+  /** "EQUITY" | "ETF" | "INDEX" | "MUTUALFUND" | "CRYPTOCURRENCY" | "CURRENCY" | ... */
+  quoteType: string;
+};
+
+/**
+ * Free-text search (company name, partial ticker, etc.). Filters to types
+ * that map to something a user would meaningfully add as a holding and drops
+ * indices/news/options.
+ */
+export async function searchSymbols(
+  query: string,
+  limit = 10
+): Promise<SymbolSearchResult[]> {
+  const q = query.trim();
+  if (!q) return [];
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r: any = await yahooFinance.search(q, { quotesCount: limit, newsCount: 0 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const quotes = (r?.quotes ?? []) as any[];
+    const KEEP = new Set(["EQUITY", "ETF", "MUTUALFUND", "CRYPTOCURRENCY", "CURRENCY"]);
+    return quotes
+      .filter((x) => x.symbol && KEEP.has(x.quoteType))
+      .map((x) => ({
+        symbol: String(x.symbol),
+        name: String(x.shortname || x.longname || x.symbol),
+        exchange: String(x.exchDisp || x.exchange || ""),
+        quoteType: String(x.quoteType)
+      }));
+  } catch (e) {
+    console.warn(`[searchSymbols] "${q}" failed:`, e);
+    return [];
+  }
+}
+
 /** Daily OHLC history for a single symbol over the trailing N days. */
 export async function fetchSymbolHistory(symbol: string, days = 365): Promise<HistoryPoint[]> {
   const period1 = new Date();

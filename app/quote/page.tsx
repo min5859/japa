@@ -1,10 +1,30 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { lookupQuoteDetail, fetchSymbolHistory } from "@/lib/market";
+import { lookupQuoteDetail, fetchSymbolHistory, searchSymbols } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { QuoteSearchForm } from "@/components/quote-search-form";
 import { MarketChart } from "@/components/market-chart";
+
+const QUOTE_TYPE_LABELS: Record<string, string> = {
+  EQUITY: "주식",
+  ETF: "ETF",
+  MUTUALFUND: "펀드",
+  CRYPTOCURRENCY: "암호화폐",
+  CURRENCY: "통화"
+};
+
+/** Tickers we can look up directly without going through search. */
+function looksLikeTicker(input: string): boolean {
+  // 6 digits (KOSPI/KOSDAQ), or alphanumerics with allowed punctuation (e.g. AAPL, BRK.B, 005930.KS)
+  if (/^\d{6}$/.test(input)) return true;
+  return /^[A-Za-z0-9.\-^=]+$/.test(input);
+}
+
+/** Yahoo Finance search API rejects CJK characters with BadRequestError. */
+function hasCjk(input: string): boolean {
+  return /[　-〿㄰-㆏가-힯一-鿿぀-ゟ゠-ヿ]/.test(input);
+}
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +55,25 @@ export default async function QuotePage({
   const { symbol } = await searchParams;
   const trimmed = symbol?.trim() ?? "";
 
-  // History needs the resolved Yahoo symbol (.KS/.KQ), so quote must come first.
-  const quote = trimmed ? await lookupQuoteDetail(trimmed) : null;
+  // Strategy:
+  // - Empty input → show landing
+  // - Looks like a ticker → try direct lookup first; if it misses, fall back to search
+  // - Otherwise (company name, Korean text, etc.) → search and show candidates
+  let quote = null;
+  let candidates: Awaited<ReturnType<typeof searchSymbols>> = [];
+  const cjkBlocked = trimmed && hasCjk(trimmed);
+
+  if (trimmed) {
+    if (looksLikeTicker(trimmed)) {
+      quote = await lookupQuoteDetail(trimmed);
+    }
+    // Yahoo's search API rejects CJK; skip the call and fall through to a
+    // friendlier message instead of returning an unrelated empty list.
+    if (!quote && !cjkBlocked) {
+      candidates = await searchSymbols(trimmed, 10);
+    }
+  }
+
   const history = quote ? await fetchSymbolHistory(quote.symbol, 365) : [];
 
   return (
@@ -54,11 +91,52 @@ export default async function QuotePage({
         </CardContent>
       </Card>
 
-      {trimmed && !quote && (
+      {trimmed && !quote && candidates.length > 0 && (
         <Card>
-          <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            {`종목을 찾을 수 없습니다: `}
-            <span className="font-mono">{trimmed}</span>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">
+              검색 결과 ({candidates.length})
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              원하는 종목을 클릭하면 시세를 조회합니다.
+            </p>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {candidates.map((c) => (
+              <Link
+                key={c.symbol}
+                href={`/quote?symbol=${encodeURIComponent(c.symbol)}`}
+                className="flex items-center justify-between gap-3 py-3 transition hover:bg-muted/50 -mx-6 px-6"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{c.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-mono">{c.symbol}</span>
+                    {c.exchange && ` · ${c.exchange}`}
+                    {` · ${QUOTE_TYPE_LABELS[c.quoteType] ?? c.quoteType}`}
+                  </p>
+                </div>
+                <span className="text-xs text-primary">조회 →</span>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {trimmed && !quote && candidates.length === 0 && (
+        <Card>
+          <CardContent className="space-y-2 py-10 text-center text-sm text-muted-foreground">
+            <p>
+              {`검색 결과가 없습니다: `}
+              <span className="font-mono">{trimmed}</span>
+            </p>
+            {cjkBlocked && (
+              <p className="text-xs">
+                Yahoo Finance 검색은 한글을 지원하지 않습니다. 영문
+                회사명(예: <span className="font-mono">samsung</span>) 또는
+                6자리 종목 코드로 시도해 주세요.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -158,7 +236,7 @@ export default async function QuotePage({
       {!trimmed && (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            <p>종목 코드를 입력해 조회하세요.</p>
+            <p>종목 코드 또는 회사명을 입력해 조회하세요.</p>
             <p className="mt-2 text-xs">
               · 6자리 숫자 → KOSPI/KOSDAQ 자동 판별 (예:{" "}
               <Link href="/quote?symbol=005930" className="font-mono underline hover:text-foreground">
@@ -171,6 +249,16 @@ export default async function QuotePage({
                 AAPL
               </Link>
               )
+              <br />
+              · 회사명(영문) → 후보 목록에서 선택 (예:{" "}
+              <Link href="/quote?symbol=samsung" className="underline hover:text-foreground">
+                samsung
+              </Link>
+              ,{" "}
+              <Link href="/quote?symbol=apple" className="underline hover:text-foreground">
+                apple
+              </Link>
+              ). Yahoo 검색은 한글 미지원.
             </p>
           </CardContent>
         </Card>
