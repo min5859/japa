@@ -12,6 +12,7 @@ import {
   Layers3,
   Menu,
   Receipt,
+  Search,
   TrendingUp,
   X,
   type LucideIcon
@@ -28,6 +29,7 @@ const NAV: NavItem[] = [
   { href: "/groups", label: "그룹", icon: FolderOpen },
   { href: "/holdings", label: "Holdings", icon: Layers3 },
   { href: "/dividends", label: "배당", icon: Coins },
+  { href: "/quote", label: "시세조회", icon: Search },
   { href: "/market", label: "Market", icon: TrendingUp },
   { href: "/tax", label: "세금", icon: Receipt },
   { href: "/ai", label: "AI 분석", icon: Bot }

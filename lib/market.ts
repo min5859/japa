@@ -41,6 +41,16 @@ export type SymbolLookup = {
   price: number;
 };
 
+export type QuoteDetail = SymbolLookup & {
+  exchange: string;
+  previousClose: number | null;
+  change: number | null;
+  changePercent: number | null;
+  fiftyTwoWeekHigh: number | null;
+  fiftyTwoWeekLow: number | null;
+  marketCap: number | null;
+};
+
 async function tryLookup(symbol: string): Promise<SymbolLookup | null> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,6 +62,32 @@ async function tryLookup(symbol: string): Promise<SymbolLookup | null> {
       name: (r.shortName || r.longName || symbol) as string,
       currency: (r.currency || "USD") as string,
       price
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function tryQuoteDetail(symbol: string): Promise<QuoteDetail | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r: any = await yahooFinance.quote(symbol);
+    const price = r?.regularMarketPrice as number | undefined;
+    if (price == null || !Number.isFinite(price) || price <= 0) return null;
+    const num = (v: unknown): number | null =>
+      typeof v === "number" && Number.isFinite(v) ? v : null;
+    return {
+      symbol,
+      name: (r.shortName || r.longName || symbol) as string,
+      currency: (r.currency || "USD") as string,
+      price,
+      exchange: (r.fullExchangeName || r.exchange || "") as string,
+      previousClose: num(r.regularMarketPreviousClose),
+      change: num(r.regularMarketChange),
+      changePercent: num(r.regularMarketChangePercent),
+      fiftyTwoWeekHigh: num(r.fiftyTwoWeekHigh),
+      fiftyTwoWeekLow: num(r.fiftyTwoWeekLow),
+      marketCap: num(r.marketCap)
     };
   } catch {
     return null;
@@ -71,6 +107,41 @@ export async function lookupSymbol(input: string): Promise<SymbolLookup | null> 
     return (await tryLookup(`${code}.KS`)) ?? (await tryLookup(`${code}.KQ`));
   }
   return tryLookup(code.toUpperCase());
+}
+
+/** Same KS/KQ probe as lookupSymbol but returns the richer QuoteDetail shape. */
+export async function lookupQuoteDetail(input: string): Promise<QuoteDetail | null> {
+  const code = input.trim();
+  if (!code) return null;
+  if (/^\d{6}$/.test(code)) {
+    return (await tryQuoteDetail(`${code}.KS`)) ?? (await tryQuoteDetail(`${code}.KQ`));
+  }
+  return tryQuoteDetail(code.toUpperCase());
+}
+
+/** Daily OHLC history for a single symbol over the trailing N days. */
+export async function fetchSymbolHistory(symbol: string, days = 365): Promise<HistoryPoint[]> {
+  const period1 = new Date();
+  period1.setDate(period1.getDate() - days);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = await yahooFinance.chart(symbol, {
+      period1,
+      period2: new Date(),
+      interval: "1d"
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const quotes = (result?.quotes ?? []) as any[];
+    return quotes
+      .filter((q) => q.close != null)
+      .map((q) => ({
+        date: new Date(q.date).toISOString().slice(0, 10),
+        value: Number(q.close)
+      }));
+  } catch (e) {
+    console.warn(`[fetchSymbolHistory] ${symbol} failed:`, e);
+    return [];
+  }
 }
 
 /** Limit Yahoo concurrent requests; spike of 30+ parallel quotes intermittently produces missing fields. */
