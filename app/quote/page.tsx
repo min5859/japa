@@ -23,7 +23,7 @@ function looksLikeTicker(input: string): boolean {
 
 /** Yahoo Finance search API rejects CJK characters with BadRequestError. */
 function hasCjk(input: string): boolean {
-  return /[　-〿㄰-㆏가-힯一-鿿぀-ゟ゠-ヿ]/.test(input);
+  return /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(input);
 }
 
 export const dynamic = "force-dynamic";
