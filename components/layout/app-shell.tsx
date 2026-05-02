@@ -7,6 +7,7 @@ import {
   BarChart3,
   Bot,
   Coins,
+  FolderOpen,
   Landmark,
   Layers3,
   Menu,
@@ -24,6 +25,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 const NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/accounts", label: "Accounts", icon: Landmark },
+  { href: "/groups", label: "그룹", icon: FolderOpen },
   { href: "/holdings", label: "Holdings", icon: Layers3 },
   { href: "/dividends", label: "배당", icon: Coins },
   { href: "/market", label: "Market", icon: TrendingUp },
