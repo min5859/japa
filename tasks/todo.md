@@ -84,4 +84,13 @@
 
 ## Review (구현 후 기록)
 
-> 각 항목 완료 시 여기에 무엇을, 왜, 어떻게 바꿨는지 한두 줄로 정리.
+### 2026-05-02 — 1차 작업 (UI + 작은 보강 3건)
+
+- **사이드바 전환** (1ae9d10): 상단 가로 nav → 좌측 사이드바 + 모바일 슬라이드 오버. RefreshPricesButton·LogoutButton은 본문 상단 toolbar로 분리. ESC/라우트 변경 시 자동 닫힘, body scroll lock 적용. AppShell client wrapper로 사이드바 상태 관리, /login 분기는 server layout에서 유지. **타입체크/린트만 통과 — 실제 반응형 동작은 브라우저에서 직접 확인 필요.**
+- **종목 자동 판별** (0bf950e): HoldingForm 티커 입력 옆 "자동" 버튼. 6자리 숫자 → `.KS` 시도 후 실패시 `.KQ`. 영문 티커는 그대로 조회. 성공 시 symbol/currency/name(빈 경우만) 자동 채움. lib/market.ts의 `lookupSymbol`은 quote 결과에서 name·currency·price를 함께 반환.
+- **갱신 쿨다운** (1aece73): refreshPrices server action 진입부에서 PriceCache 최신 fetchedAt 확인, 60초 이내면 cooldownRemainingSeconds만 반환하고 조기 종료. cron은 lib 함수를 직접 호출하므로 영향 없음. UI에 "X초 후 재시도" 안내 표시.
+
+### 미진행 (다음 세션 권장)
+
+- 배당 내역 기록 (Dividend 모델) — Prisma 스키마 변경 + 신규 페이지 + Tax 페이지 통합. 별도 세션에서 설계 합의 후 진행.
+- 계좌 그룹 (N:M) — Prisma 스키마 변경 + 그룹 페이지 + 대시보드 필터 통합.
