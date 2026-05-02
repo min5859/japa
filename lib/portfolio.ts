@@ -161,3 +161,19 @@ export function summarizePortfolio(
     }
   };
 }
+
+/**
+ * Sum holdings' KRW market value by asset class. Negative or zero positions
+ * are skipped — they don't belong in an allocation breakdown.
+ */
+export function groupHoldingsByAssetClass(
+  accounts: AccountValue[]
+): Record<string, number> {
+  const totals: Record<string, number> = {};
+  for (const h of accounts.flatMap((a) => a.holdings)) {
+    if (h.marketValueBase > 0) {
+      totals[h.assetClass] = (totals[h.assetClass] ?? 0) + h.marketValueBase;
+    }
+  }
+  return totals;
+}

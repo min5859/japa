@@ -1,20 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { AccountValue, PortfolioSummary } from "@/lib/portfolio";
+import { groupHoldingsByAssetClass } from "@/lib/portfolio";
 import type { DividendIncomeSummary, ForeignGainSummary, TaxAdvantagedSummary } from "@/lib/tax";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-
-const ASSET_CLASS_LABELS: Record<string, string> = {
-  CASH: "현금",
-  DOMESTIC_STOCK: "국내주식",
-  INTERNATIONAL_STOCK: "해외주식",
-  ETF: "ETF",
-  BOND: "채권",
-  FUND: "펀드",
-  CRYPTO: "암호화폐",
-  REAL_ESTATE: "부동산",
-  LIABILITY: "부채",
-  OTHER: "기타"
-};
+import { ASSET_CLASS_LABELS } from "@/lib/labels";
 
 function buildPortfolioContext(
   accounts: AccountValue[],
@@ -35,11 +24,7 @@ function buildPortfolioContext(
   lines.push("");
 
   // 자산 배분
-  const allHoldings = accounts.flatMap((a) => a.holdings);
-  const byClass: Record<string, number> = {};
-  for (const h of allHoldings) {
-    byClass[h.assetClass] = (byClass[h.assetClass] ?? 0) + h.marketValueBase;
-  }
+  const byClass = groupHoldingsByAssetClass(accounts);
   if (Object.keys(byClass).length > 0) {
     lines.push("## 자산 배분");
     for (const [cls, val] of Object.entries(byClass).sort((a, b) => b[1] - a[1])) {

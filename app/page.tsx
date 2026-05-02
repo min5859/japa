@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, Plus } from "lucide-react";
 import { getPortfolio, getSnapshots } from "@/lib/data";
+import { groupHoldingsByAssetClass } from "@/lib/portfolio";
 import { getMarketIndices } from "@/lib/market";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,9 @@ export default async function DashboardPage() {
   ]);
 
   // 자산 배분 집계
-  const allHoldings = accounts.flatMap((a) => a.holdings);
-  const byClass: Record<string, number> = {};
-  for (const h of allHoldings) {
-    if (h.marketValueBase > 0) {
-      byClass[h.assetClass] = (byClass[h.assetClass] ?? 0) + h.marketValueBase;
-    }
-  }
-  const allocationData = Object.entries(byClass).map(([assetClass, value]) => ({ assetClass, value }));
+  const allocationData = Object.entries(groupHoldingsByAssetClass(accounts)).map(
+    ([assetClass, value]) => ({ assetClass, value })
+  );
 
   return (
     <div className="space-y-8">
