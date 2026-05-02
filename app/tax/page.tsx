@@ -1,6 +1,7 @@
-import { AlertTriangle, CheckCircle, Info, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle, Coins, Info, TrendingUp } from "lucide-react";
 import { getPortfolio } from "@/lib/data";
 import { calcDividendIncome, calcForeignGains, calcTaxAdvantaged } from "@/lib/tax";
+import { getReceivedDividendTotals } from "@/lib/dividends";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
@@ -22,7 +23,11 @@ const ASSET_CLASS_LABELS: Record<string, string> = {
 };
 
 export default async function TaxPage() {
-  const { accounts } = await getPortfolio();
+  const currentYear = new Date().getUTCFullYear();
+  const [{ accounts }, receivedYTD] = await Promise.all([
+    getPortfolio(),
+    getReceivedDividendTotals(currentYear)
+  ]);
   const namedAccounts = accounts as (typeof accounts)[number][];
 
   const dividendSummary = calcDividendIncome(namedAccounts);
@@ -31,6 +36,7 @@ export default async function TaxPage() {
 
   const THRESHOLD = 20_000_000;
   const DEDUCTION = 2_500_000;
+  const ytdRatio = receivedYTD.gross / THRESHOLD;
 
   return (
     <div className="space-y-8">
@@ -48,6 +54,38 @@ export default async function TaxPage() {
           금융소득종합과세
         </h3>
 
+        {/* 실수령 (올해 YTD, 절세계좌 제외) */}
+        <Card className={ytdRatio >= 1 ? "border-red-500/50" : ""}>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Coins className="h-4 w-4" />
+              {currentYear}년 실수령 배당 ({receivedYTD.count}건, 절세계좌 제외)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-muted-foreground">세전 합계 (KRW)</p>
+              <p className="text-2xl font-bold">{formatCurrency(receivedYTD.gross)}</p>
+              <ProgressBar ratio={ytdRatio} warn={ytdRatio >= 1} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                기준 {formatCurrency(THRESHOLD)} 대비{" "}
+                <span className={ytdRatio >= 1 ? "font-semibold text-red-500" : ""}>
+                  {formatNumber(ytdRatio * 100, 1)}%
+                </span>
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">원천징수</p>
+              <p className="text-2xl font-bold">{formatCurrency(receivedYTD.tax)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">실수령</p>
+              <p className="text-2xl font-bold text-primary">{formatCurrency(receivedYTD.net)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <h4 className="text-sm font-medium text-muted-foreground">예상 (보유 기준)</h4>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className={dividendSummary.isOverThreshold ? "border-red-500/50" : ""}>
             <CardHeader className="pb-2">
