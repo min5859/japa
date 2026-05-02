@@ -77,10 +77,19 @@ function SidebarBrand() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopOpen, setDesktopOpen] = useState(true);
 
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  function handleMenuClick() {
+    if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
+      setDesktopOpen((v) => !v);
+    } else {
+      setMobileOpen(true);
+    }
+  }
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -97,8 +106,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen md:flex">
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r bg-card/60 px-3 py-5 backdrop-blur md:flex">
+      {/* Desktop sidebar (collapsible) */}
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r bg-card/60 backdrop-blur transition-[width,padding] duration-200 md:flex",
+          desktopOpen ? "w-56 px-3 py-5" : "w-0 px-0 py-0"
+        )}
+      >
         <SidebarBrand />
         <NavLinks pathname={pathname} />
       </aside>
@@ -133,13 +147,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/80 px-4 py-3 backdrop-blur md:px-8">
           <button
             type="button"
-            aria-label="메뉴 열기"
-            onClick={() => setMobileOpen(true)}
-            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
+            aria-label={desktopOpen ? "사이드바 접기" : "사이드바 펴기"}
+            onClick={handleMenuClick}
+            className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="md:hidden">
+          <div className={cn(desktopOpen ? "md:hidden" : "")}>
             <p className="text-sm font-semibold tracking-tight">JAPA</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
