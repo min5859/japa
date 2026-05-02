@@ -57,6 +57,7 @@ model Account {
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
   holdings                Holding[]
+  dividends               Dividend[]
 
   @@index([type])
   @@index([isTaxAdvantaged])
@@ -78,6 +79,7 @@ model Holding {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   account        Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  dividends      Dividend[]
 
   @@index([accountId])
   @@index([assetClass])
@@ -112,6 +114,35 @@ model MarketIndex {
   currency      String   @default("USD")
   isYield       Boolean  @default(false)
   fetchedAt     DateTime @default(now())
+}
+
+// 실제 수령 배당 내역 — 예상치(Holding.dividendYield)와 분리해 추적
+model Dividend {
+  id              String    @id @default(cuid())
+  accountId       String
+  holdingId       String?
+  symbol          String?
+  dividendDate    DateTime  @db.Date
+  exDividendDate  DateTime? @db.Date
+  amountPerShare  Decimal   @db.Decimal(18, 6)
+  quantity        Decimal   @db.Decimal(24, 8)
+  totalAmount     Decimal   @db.Decimal(18, 4)
+  taxAmount       Decimal   @default(0) @db.Decimal(18, 4)
+  netAmount       Decimal   @db.Decimal(18, 4)
+  currency        Currency  @default(KRW)
+  fxRate          Decimal   @default(1) @db.Decimal(18, 8)
+  isTaxOverridden Boolean   @default(false)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  account Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  holding Holding? @relation(fields: [holdingId], references: [id], onDelete: SetNull)
+
+  @@index([accountId])
+  @@index([holdingId])
+  @@index([dividendDate])
+  @@index([symbol])
 }
 
 // 월별 포트폴리오 스냅샷 — 순자산 추이 차트용
