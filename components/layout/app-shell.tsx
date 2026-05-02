@@ -67,16 +67,6 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
   );
 }
 
-function SidebarBrand() {
-  return (
-    <div className="px-3 pb-6">
-      <h1 className="text-lg font-semibold tracking-tight">
-        Personal Asset Dashboard
-      </h1>
-    </div>
-  );
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -117,7 +107,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
       >
         <div className="w-56">
-          <SidebarBrand />
+          <div className="px-3 pb-6">
+            <h1 className="text-lg font-semibold tracking-tight">
+              Personal Asset Dashboard
+            </h1>
+          </div>
           <NavLinks pathname={pathname} />
         </div>
       </aside>
