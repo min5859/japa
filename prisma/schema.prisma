@@ -58,9 +58,23 @@ model Account {
   updatedAt               DateTime    @updatedAt
   holdings                Holding[]
   dividends               Dividend[]
+  groups                  AccountGroup[]
 
   @@index([type])
   @@index([isTaxAdvantaged])
+}
+
+// 사용자 정의 계좌 분류 — N:M (절세계좌, 해외주식 등 자유 분류)
+model AccountGroup {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  accounts     Account[]
+
+  @@index([displayOrder])
 }
 
 model Holding {
