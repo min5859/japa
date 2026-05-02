@@ -34,6 +34,45 @@ async function fetchQuotePrice(symbol: string): Promise<{ price: number | null; 
   }
 }
 
+export type SymbolLookup = {
+  symbol: string;
+  name: string;
+  currency: string;
+  price: number;
+};
+
+async function tryLookup(symbol: string): Promise<SymbolLookup | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const r: any = await yahooFinance.quote(symbol);
+    const price = r?.regularMarketPrice as number | undefined;
+    if (price == null || !Number.isFinite(price) || price <= 0) return null;
+    return {
+      symbol,
+      name: (r.shortName || r.longName || symbol) as string,
+      currency: (r.currency || "USD") as string,
+      price
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve a user-entered ticker into a Yahoo Finance symbol.
+ * - 6 digits → try `.KS` (KOSPI) first, fall back to `.KQ` (KOSDAQ)
+ * - Otherwise → query as-is and trust Yahoo's metadata
+ */
+export async function lookupSymbol(input: string): Promise<SymbolLookup | null> {
+  const code = input.trim();
+  if (!code) return null;
+
+  if (/^\d{6}$/.test(code)) {
+    return (await tryLookup(`${code}.KS`)) ?? (await tryLookup(`${code}.KQ`));
+  }
+  return tryLookup(code.toUpperCase());
+}
+
 /** Limit Yahoo concurrent requests; spike of 30+ parallel quotes intermittently produces missing fields. */
 const REFRESH_CONCURRENCY = 6;
 const REFRESH_RETRIES = 1;

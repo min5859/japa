@@ -50,7 +50,7 @@
   - UI: `/groups` 목록 + 상세 (그룹별 계좌 합산 표시), 계좌 편집 화면에서 그룹 다중 선택
   - 대시보드: 그룹별 필터/탭 옵션
 
-- [ ] **종목 자동 판별 (`detectSymbol`)** ⭐⭐
+- [x] **종목 자동 판별 (`detectSymbol`)** ⭐⭐
   - 현재 한계: 사용자가 `005930.KS` 형식을 직접 입력
   - 동작: 6자리 숫자 → KOSPI/KOSDAQ 판별 후 `.KS`/`.KQ` 자동 부여, 영문 티커는 그대로
   - 적용 위치: `components/forms/holding-form.tsx` 의 symbol 입력 onBlur

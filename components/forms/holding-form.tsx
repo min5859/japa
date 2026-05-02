@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { Search } from "lucide-react";
 import type { Holding } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { HoldingActionState } from "@/app/actions/holdings";
+import { lookupSymbolAction } from "@/app/actions/symbols";
 
 const ASSET_CLASSES = [
   { value: "CASH", label: "현금" },
@@ -59,6 +61,37 @@ export function HoldingForm({
   defaultAccountId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, { error: null });
+  const [name, setName] = useState<string>(defaultValues?.name ?? "");
+  const [symbol, setSymbol] = useState<string>(defaultValues?.symbol ?? "");
+  const [currency, setCurrency] = useState<string>(defaultValues?.currency ?? "KRW");
+  const [lookupPending, startLookup] = useTransition();
+  const [lookupMessage, setLookupMessage] = useState<{
+    kind: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  function handleLookup() {
+    const input = symbol.trim();
+    if (!input) {
+      setLookupMessage({ kind: "error", text: "티커를 먼저 입력하세요." });
+      return;
+    }
+    setLookupMessage(null);
+    startLookup(async () => {
+      const r = await lookupSymbolAction(input);
+      if (!r.ok) {
+        setLookupMessage({ kind: "error", text: r.error });
+        return;
+      }
+      setSymbol(r.data.symbol);
+      setCurrency(r.data.currency);
+      if (!name.trim()) setName(r.data.name);
+      setLookupMessage({
+        kind: "success",
+        text: `${r.data.symbol} · ${r.data.name} · ${r.data.currency} ${r.data.price.toLocaleString()}`
+      });
+    });
+  }
 
   return (
     <form action={formAction} className="space-y-5">
@@ -88,19 +121,53 @@ export function HoldingForm({
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="name">자산명 *</Label>
-          <Input id="name" name="name" defaultValue={defaultValues?.name} required />
+          <Input
+            id="name"
+            name="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="symbol">티커 / 코드</Label>
-          <Input
-            id="symbol"
-            name="symbol"
-            placeholder="예: AAPL, 005930.KS, 035720.KQ"
-            defaultValue={defaultValues?.symbol ?? ""}
-          />
+          <div className="flex gap-2">
+            <Input
+              id="symbol"
+              name="symbol"
+              placeholder="예: AAPL, 005930, 035720"
+              value={symbol}
+              onChange={(e) => setSymbol(e.target.value)}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLookup}
+              disabled={lookupPending}
+              title="Yahoo Finance에서 자동 채우기"
+            >
+              <Search className={`h-4 w-4 ${lookupPending ? "animate-pulse" : ""}`} />
+              <span className="ml-1 hidden sm:inline">
+                {lookupPending ? "조회 중..." : "자동"}
+              </span>
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Yahoo Finance 심볼 · 코스피는 .KS, 코스닥은 .KQ 접미사 필요
+            6자리 코드는 KOSPI/KOSDAQ 자동 판별 · 영문 티커는 Yahoo에 그대로 조회
           </p>
+          {lookupMessage && (
+            <p
+              className={`text-xs ${
+                lookupMessage.kind === "success"
+                  ? "text-emerald-600"
+                  : "text-destructive"
+              }`}
+            >
+              {lookupMessage.text}
+            </p>
+          )}
         </div>
       </div>
 
@@ -117,7 +184,12 @@ export function HoldingForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="currency">거래 통화</Label>
-          <Select id="currency" name="currency" defaultValue={defaultValues?.currency ?? "KRW"}>
+          <Select
+            id="currency"
+            name="currency"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+          >
             {CURRENCIES.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
