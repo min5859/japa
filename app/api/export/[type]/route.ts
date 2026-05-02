@@ -4,9 +4,14 @@ import { toNumber } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type ExportType = "accounts" | "holdings" | "snapshots";
+type ExportType = "accounts" | "holdings" | "snapshots" | "dividends";
 
-const EXPORT_TYPES = new Set<ExportType>(["accounts", "holdings", "snapshots"]);
+const EXPORT_TYPES = new Set<ExportType>([
+  "accounts",
+  "holdings",
+  "snapshots",
+  "dividends"
+]);
 
 function csvCell(value: unknown): string {
   if (value == null) return "";
@@ -61,6 +66,43 @@ async function buildHoldingsCsv(): Promise<string> {
   );
 }
 
+async function buildDividendsCsv(): Promise<string> {
+  const rows = await prisma.dividend.findMany({
+    orderBy: { dividendDate: "desc" },
+    include: {
+      account: { select: { name: true } },
+      holding: { select: { name: true } }
+    }
+  });
+  return csvRows(
+    [
+      "id", "dividendDate", "exDividendDate", "accountName", "holdingName",
+      "symbol", "amountPerShare", "quantity", "totalAmount", "taxAmount",
+      "netAmount", "currency", "fxRate", "isTaxOverridden", "notes",
+      "createdAt", "updatedAt"
+    ],
+    rows.map((d) => [
+      d.id,
+      d.dividendDate.toISOString().slice(0, 10),
+      d.exDividendDate ? d.exDividendDate.toISOString().slice(0, 10) : "",
+      d.account.name,
+      d.holding?.name ?? "",
+      d.symbol ?? "",
+      toNumber(d.amountPerShare),
+      toNumber(d.quantity),
+      toNumber(d.totalAmount),
+      toNumber(d.taxAmount),
+      toNumber(d.netAmount),
+      d.currency,
+      toNumber(d.fxRate),
+      d.isTaxOverridden,
+      d.notes ?? "",
+      d.createdAt.toISOString(),
+      d.updatedAt.toISOString()
+    ])
+  );
+}
+
 async function buildSnapshotsCsv(): Promise<string> {
   const rows = await prisma.portfolioSnapshot.findMany({ orderBy: { takenAt: "asc" } });
   return csvRows(
@@ -86,6 +128,7 @@ export async function GET(
   const csv = await (
     type === "accounts" ? buildAccountsCsv() :
     type === "holdings" ? buildHoldingsCsv() :
+    type === "dividends" ? buildDividendsCsv() :
     buildSnapshotsCsv()
   );
   const stamp = new Date().toISOString().slice(0, 10);

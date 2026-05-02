@@ -217,6 +217,7 @@ export default async function DashboardPage() {
             {[
               { type: "accounts", label: "계좌 CSV" },
               { type: "holdings", label: "보유 CSV" },
+              { type: "dividends", label: "배당 CSV" },
               { type: "snapshots", label: "스냅샷 CSV" }
             ].map(({ type, label }) => (
               <a
