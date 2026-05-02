@@ -3,6 +3,7 @@ import type { AccountValue, HoldingValue } from "@/lib/portfolio";
 // 한국 세법 상수
 const FINANCIAL_INCOME_THRESHOLD = 20_000_000; // 금융소득종합과세 기준 2천만원
 const FINANCIAL_INCOME_TAX_RATE = 0.154; // 원천징수 14% + 지방세 1.4%
+const FINANCIAL_INCOME_TOP_MARGINAL_RATE = 0.45; // 종합과세 초과분 보수적 추정용 (최고세율)
 const FOREIGN_GAIN_DEDUCTION = 2_500_000; // 해외주식 양도소득 기본공제 250만원
 const FOREIGN_GAIN_TAX_RATE = 0.22; // 해외주식 양도세율 22% (지방소득세 포함)
 
@@ -88,9 +89,8 @@ export function calcDividendIncome(
   const thresholdRatio = totalEstimated / FINANCIAL_INCOME_THRESHOLD;
   const isOverThreshold = totalEstimated >= FINANCIAL_INCOME_THRESHOLD;
   const withholdingTax = Math.min(totalEstimated, FINANCIAL_INCOME_THRESHOLD) * FINANCIAL_INCOME_TAX_RATE;
-  // 종합과세 초과분: 단순히 초과액에 대해 최고세율(45%) 기준 보수적 추정
   const additionalTax = isOverThreshold
-    ? (totalEstimated - FINANCIAL_INCOME_THRESHOLD) * 0.45
+    ? (totalEstimated - FINANCIAL_INCOME_THRESHOLD) * FINANCIAL_INCOME_TOP_MARGINAL_RATE
     : 0;
 
   return { totalEstimated, thresholdRatio, isOverThreshold, withholdingTax, additionalTax, items };
