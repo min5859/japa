@@ -18,7 +18,7 @@
 
 ## 2. 기능 — 가치 큰 순
 
-- [ ] **배당 내역 기록 기능 (Dividend 모델 신규 추가)** ⭐⭐⭐
+- [x] **배당 내역 기록 기능 (Dividend 모델 신규 추가)** ⭐⭐⭐
   - 현재 한계: `Holding.dividendYield(%)` 로 "예상 배당"만 계산 — 실제 수령액 추적 불가, Tax 페이지 수치가 추정치에 머무름
   - 추가할 Prisma 모델 (toy/japa 설계 차용):
     ```
@@ -40,7 +40,7 @@
   - Tax 페이지 통합: "예상 배당" → "실수령 + 예상 미수령" 으로 분리 표시
   - CSV export 추가 (`/api/export/dividends`)
 
-- [ ] **계좌 그룹(N:M) 기능** ⭐⭐
+- [x] **계좌 그룹(N:M) 기능** ⭐⭐
   - 현재 한계: `Account.type` enum + `isTaxAdvantaged` 플래그만 — "해외주식 전용 계좌만 묶어보기" 같은 사용자 정의 분류 불가
   - 추가할 모델:
     ```
@@ -90,7 +90,23 @@
 - **종목 자동 판별** (0bf950e): HoldingForm 티커 입력 옆 "자동" 버튼. 6자리 숫자 → `.KS` 시도 후 실패시 `.KQ`. 영문 티커는 그대로 조회. 성공 시 symbol/currency/name(빈 경우만) 자동 채움. lib/market.ts의 `lookupSymbol`은 quote 결과에서 name·currency·price를 함께 반환.
 - **갱신 쿨다운** (1aece73): refreshPrices server action 진입부에서 PriceCache 최신 fetchedAt 확인, 60초 이내면 cooldownRemainingSeconds만 반환하고 조기 종료. cron은 lib 함수를 직접 호출하므로 영향 없음. UI에 "X초 후 재시도" 안내 표시.
 
-### 미진행 (다음 세션 권장)
+### 2026-05-02 — 2차 작업 (배당 + 계좌 그룹)
 
-- 배당 내역 기록 (Dividend 모델) — Prisma 스키마 변경 + 신규 페이지 + Tax 페이지 통합. 별도 세션에서 설계 합의 후 진행.
-- 계좌 그룹 (N:M) — Prisma 스키마 변경 + 그룹 페이지 + 대시보드 필터 통합.
+**배당 내역 기록 (Dividend)**
+- `e1ca906` Prisma 모델: Dividend (accountId·holdingId·dividendDate·amount/quantity/total/tax/net·currency·fxRate·isTaxOverridden). holdingId는 SET NULL로 holding 삭제에도 페이아웃 보존.
+- `a43dcb0` 자동 세율: 절세계좌 0% / KRW 15.4% / 외화 15%. `isTaxOverridden` 체크 시 사용자 입력값 사용. totalAmount 미입력 시 amountPerShare × quantity 자동.
+- `7a81fbc` /dividends 목록(연도별 합산 카드 + 표) + new/edit 페이지. 폼에서 holding 선택 시 symbol·currency·quantity 자동 채움. 사이드바 "배당" 추가.
+- `540c824` Tax 페이지에 "올해 실수령 배당" 카드 추가 (절세계좌 제외, KRW 환산). 기존 예상 카드는 "예상 (보유 기준)" 부제하에 그대로 유지.
+- `f787fda` `/api/export/dividends` CSV + 대시보드 export 링크.
+
+**계좌 그룹 (AccountGroup)**
+- `4ce284a` Prisma implicit N:M 관계. `_AccountToAccountGroup` 자동 생성, 양방향 cascade.
+- `b3bd6de` /groups 목록(카드 그리드) + /groups/[id] 상세(그룹 합산 + 계좌 drill-in) + new/edit. GroupForm은 체크박스 + hidden input으로 server action에 `accountIds[]` 전달. 사이드바 "그룹" 추가 (Accounts와 Holdings 사이).
+
+**모든 항목 완료**. UI 동작은 브라우저 확인 필요.
+
+### 추가 정비 (별도 작업 권장)
+
+- `middleware.ts` → `proxy.ts` (Next.js 16 deprecation 경고)
+- `force-dynamic` 일부 라우트 풀어 캐싱 도입 검토 (단일 사용자라 효과 제한적)
+- DB 리전 ap-south-1 → ap-northeast-2 이전 (응답 속도 큰 폭 향상)
