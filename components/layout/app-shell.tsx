@@ -68,10 +68,7 @@ function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () 
 function SidebarBrand() {
   return (
     <div className="px-3 pb-6">
-      <p className="text-xs font-medium text-muted-foreground">
-        Owner-only manual asset control
-      </p>
-      <h1 className="mt-1 text-lg font-semibold tracking-tight">
+      <h1 className="text-lg font-semibold tracking-tight">
         Personal Asset Dashboard
       </h1>
     </div>
