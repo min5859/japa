@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Bot,
+  Coins,
   Landmark,
   Layers3,
   Menu,
@@ -24,6 +25,7 @@ const NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: BarChart3 },
   { href: "/accounts", label: "Accounts", icon: Landmark },
   { href: "/holdings", label: "Holdings", icon: Layers3 },
+  { href: "/dividends", label: "배당", icon: Coins },
   { href: "/market", label: "Market", icon: TrendingUp },
   { href: "/tax", label: "세금", icon: Receipt },
   { href: "/ai", label: "AI 분석", icon: Bot }
