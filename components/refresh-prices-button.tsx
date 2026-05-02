@@ -21,14 +21,19 @@ export function RefreshPricesButton() {
 
   const hasIssues =
     !!result && (result.failed.length > 0 || result.skippedNoSymbol.length > 0);
+  const cooldown = result?.cooldownRemainingSeconds;
 
   return (
     <div className="relative flex items-center gap-2">
-      {result && (
+      {result && cooldown ? (
+        <span className="hidden text-xs text-amber-600 sm:inline">
+          {cooldown}초 후 재시도
+        </span>
+      ) : result ? (
         <span className="hidden text-xs text-muted-foreground sm:inline">
           종목 {result.updated}/{result.attempted} · 지수 {result.indicesUpdated}
         </span>
-      )}
+      ) : null}
       <Button
         size="sm"
         variant="outline"

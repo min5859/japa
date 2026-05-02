@@ -56,7 +56,7 @@
   - 적용 위치: `components/forms/holding-form.tsx` 의 symbol 입력 onBlur
   - 참고: `toy/japa/src/lib/yahoo/symbols.ts`
 
-- [ ] **수동 시세 갱신 쿨다운** ⭐
+- [x] **수동 시세 갱신 쿨다운** ⭐
   - 현재 한계: 사용자가 갱신 버튼 연타 가능 (cron + 수동 동시 호출 위험도 동일)
   - 구현: `lib/market.ts:refreshAllPrices()` 진입부에서 `priceCache.fetchedAt` 최신값이 60초 이내면 스킵
   - 주의: cron 경로(`/api/cron/daily`)에는 미적용 — 수동 트리거 전용 옵션 인자로 분기
