@@ -110,12 +110,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop sidebar (collapsible) */}
       <aside
         className={cn(
-          "sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r bg-card/60 backdrop-blur transition-[width,padding] duration-200 md:flex",
-          desktopOpen ? "w-56 px-3 py-5" : "w-0 px-0 py-0"
+          "sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden bg-card/60 backdrop-blur transition-all duration-200 md:flex",
+          desktopOpen ? "w-56 border-r px-3 py-5" : "w-0 min-w-0 border-r-0 px-0 py-0"
         )}
       >
-        <SidebarBrand />
-        <NavLinks pathname={pathname} />
+        <div className="w-56">
+          <SidebarBrand />
+          <NavLinks pathname={pathname} />
+        </div>
       </aside>
 
       {/* Mobile slide-over */}
