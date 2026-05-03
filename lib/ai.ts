@@ -91,7 +91,8 @@ export async function analyzePortfolio(
   if (!apiKey) throw new Error("GEMINI_API_KEY not set");
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  // 2.0-flash는 free tier에서 제한됨 (2026 기준). GEMINI_MODEL로 override 가능.
+  const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash" });
 
   const context = buildPortfolioContext(accounts, summary, dividend, foreignGain, taxAdvantaged);
 
