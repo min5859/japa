@@ -4,7 +4,7 @@ import { getPortfolio } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
-import { ACCOUNT_TYPE_LABELS } from "@/lib/labels";
+import { ACCOUNT_TYPE_LABELS } from "@/lib/accounts/schema";
 
 export default async function AccountsPage() {
   const { accounts } = await getPortfolio();

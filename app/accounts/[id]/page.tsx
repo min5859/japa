@@ -8,7 +8,8 @@ import { formatCurrency, formatNumber } from "@/lib/utils";
 import { deleteAccount } from "@/app/actions/accounts";
 import { deleteHolding } from "@/app/actions/holdings";
 import { DeleteButton } from "@/components/delete-button";
-import { ACCOUNT_TYPE_LABELS, ASSET_CLASS_LABELS } from "@/lib/labels";
+import { ACCOUNT_TYPE_LABELS } from "@/lib/accounts/schema";
+import { ASSET_CLASS_LABELS } from "@/lib/holdings/schema";
 
 export default async function AccountDetailPage({
   params

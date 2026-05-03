@@ -10,7 +10,8 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { HoldingActionState } from "@/app/actions/holdings";
 import { lookupSymbolAction } from "@/app/actions/symbols";
-import { ASSET_CLASSES, CURRENCIES } from "@/lib/labels";
+import { ASSET_CLASSES } from "@/lib/holdings/schema";
+import { CURRENCIES } from "@/lib/labels";
 
 type AccountOption = { id: string; name: string; institution: string | null };
 type ActionFn = (state: HoldingActionState, formData: FormData) => Promise<HoldingActionState>;

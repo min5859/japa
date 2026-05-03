@@ -4,7 +4,7 @@ import { calcDividendIncome, calcForeignGains, calcTaxAdvantaged } from "@/lib/t
 import { getReceivedDividendTotals } from "@/lib/dividends";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { ASSET_CLASS_LABELS } from "@/lib/labels";
+import { ASSET_CLASS_LABELS } from "@/lib/holdings/schema";
 
 function ProgressBar({ ratio, warn }: { ratio: number; warn: boolean }) {
   const pct = Math.min(ratio * 100, 100);

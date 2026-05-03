@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { ASSET_CLASS_LABELS } from "@/lib/labels";
+import { ASSET_CLASS_LABELS } from "@/lib/holdings/schema";
 
 const COLORS = [
   "#e50914", "#3b82f6", "#22c55e", "#f59e0b",

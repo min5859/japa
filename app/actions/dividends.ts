@@ -2,28 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { defaultDividendTaxRate } from "@/lib/dividends";
-
-const DividendSchema = z.object({
-  accountId: z.string().min(1, "계좌를 선택해 주세요"),
-  holdingId: z.string().optional(),
-  symbol: z.string().optional(),
-  dividendDate: z.string().min(1, "지급일은 필수입니다"),
-  exDividendDate: z.string().optional(),
-  amountPerShare: z.coerce.number().nonnegative(),
-  quantity: z.coerce.number().positive("수량은 0보다 커야 합니다"),
-  totalAmount: z.coerce.number().optional(),
-  taxAmount: z.coerce.number().optional(),
-  isTaxOverridden: z
-    .union([z.literal("on"), z.literal("true"), z.literal("false"), z.string()])
-    .optional()
-    .transform((v) => v === "on" || v === "true"),
-  currency: z.enum(["KRW", "USD", "EUR", "JPY", "CNY", "GBP", "HKD", "SGD"]),
-  fxRate: z.coerce.number().positive().default(1),
-  notes: z.string().optional()
-});
+import { dividendFormSchema, type DividendFormInput } from "@/lib/dividends/schema";
 
 export type DividendActionState = { error: string | null };
 
@@ -45,7 +26,7 @@ function parseFormData(formData: FormData) {
   };
 }
 
-async function deriveAmounts(input: z.infer<typeof DividendSchema>) {
+async function deriveAmounts(input: DividendFormInput) {
   const account = await prisma.account.findUnique({
     where: { id: input.accountId },
     select: { type: true, isTaxAdvantaged: true }
@@ -72,7 +53,7 @@ export async function createDividend(
   prevState: DividendActionState,
   formData: FormData
 ): Promise<DividendActionState> {
-  const parsed = DividendSchema.safeParse(parseFormData(formData));
+  const parsed = dividendFormSchema.safeParse(parseFormData(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const input = parsed.data;
@@ -107,7 +88,7 @@ export async function updateDividend(
   prevState: DividendActionState,
   formData: FormData
 ): Promise<DividendActionState> {
-  const parsed = DividendSchema.safeParse(parseFormData(formData));
+  const parsed = dividendFormSchema.safeParse(parseFormData(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const input = parsed.data;

@@ -2,28 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import type { Currency } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fxSymbol, refreshSymbols } from "@/lib/market";
+import { accountFormSchema } from "@/lib/accounts/schema";
 
 async function maybeFetchFx(currency: Currency) {
   if (currency === "KRW") return;
   const fx = fxSymbol(currency);
   if (fx) await refreshSymbols([fx]).catch(() => {});
 }
-
-const AccountSchema = z.object({
-  name: z.string().min(1, "계좌명은 필수입니다"),
-  institution: z.string().optional(),
-  type: z.enum(["CHECKING", "SAVINGS", "BROKERAGE", "RETIREMENT", "TAX_ADVANTAGED", "CREDIT", "LOAN", "OTHER"]),
-  currency: z.enum(["KRW", "USD", "EUR", "JPY", "CNY", "GBP", "HKD", "SGD"]),
-  cashBalance: z.coerce.number().default(0),
-  isTaxAdvantaged: z.boolean().default(false),
-  annualContributionLimit: z.coerce.number().nullable().optional(),
-  contributionYTD: z.coerce.number().default(0),
-  notes: z.string().optional()
-});
 
 export type AccountActionState = { error: string | null };
 
@@ -48,7 +36,7 @@ export async function createAccount(
   prevState: AccountActionState,
   formData: FormData
 ): Promise<AccountActionState> {
-  const parsed = AccountSchema.safeParse(parseFormData(formData));
+  const parsed = accountFormSchema.safeParse(parseFormData(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await prisma.account.create({ data: parsed.data });
@@ -63,7 +51,7 @@ export async function updateAccount(
   prevState: AccountActionState,
   formData: FormData
 ): Promise<AccountActionState> {
-  const parsed = AccountSchema.safeParse(parseFormData(formData));
+  const parsed = accountFormSchema.safeParse(parseFormData(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   await prisma.account.update({ where: { id }, data: parsed.data });

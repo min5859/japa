@@ -6,7 +6,7 @@ import { getPricesForPortfolio } from "@/lib/market";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { ASSET_CLASS_LABELS } from "@/lib/labels";
+import { ASSET_CLASS_LABELS } from "@/lib/holdings/schema";
 
 export default async function HoldingsPage() {
   const [rawHoldings, priceCtx] = await Promise.all([getAllHoldings(), getPricesForPortfolio()]);

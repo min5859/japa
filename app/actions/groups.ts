@@ -2,15 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-
-const GroupSchema = z.object({
-  name: z.string().min(1, "그룹 이름은 필수입니다"),
-  description: z.string().optional(),
-  displayOrder: z.coerce.number().int().default(0),
-  accountIds: z.array(z.string()).default([])
-});
+import { groupFormSchema } from "@/lib/groups/schema";
 
 export type GroupActionState = { error: string | null };
 
@@ -27,7 +20,7 @@ export async function createGroup(
   prevState: GroupActionState,
   formData: FormData
 ): Promise<GroupActionState> {
-  const parsed = GroupSchema.safeParse(parseFormData(formData));
+  const parsed = groupFormSchema.safeParse(parseFormData(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const { accountIds, ...data } = parsed.data;
@@ -48,7 +41,7 @@ export async function updateGroup(
   prevState: GroupActionState,
   formData: FormData
 ): Promise<GroupActionState> {
-  const parsed = GroupSchema.safeParse(parseFormData(formData));
+  const parsed = groupFormSchema.safeParse(parseFormData(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const { accountIds, ...data } = parsed.data;

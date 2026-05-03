@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { AccountActionState } from "@/app/actions/accounts";
-import { ACCOUNT_TYPES, CURRENCIES } from "@/lib/labels";
+import { ACCOUNT_TYPES } from "@/lib/accounts/schema";
+import { CURRENCIES } from "@/lib/labels";
 
 type ActionFn = (state: AccountActionState, formData: FormData) => Promise<AccountActionState>;
 

@@ -3,7 +3,7 @@ import type { AccountValue, PortfolioSummary } from "@/lib/portfolio";
 import { groupHoldingsByAssetClass } from "@/lib/portfolio";
 import type { DividendIncomeSummary, ForeignGainSummary, TaxAdvantagedSummary } from "@/lib/tax";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { ASSET_CLASS_LABELS } from "@/lib/labels";
+import { ASSET_CLASS_LABELS } from "@/lib/holdings/schema";
 
 function buildPortfolioContext(
   accounts: AccountValue[],
