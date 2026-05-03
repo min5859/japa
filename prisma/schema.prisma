@@ -159,6 +159,22 @@ model Dividend {
   @@index([symbol])
 }
 
+// AI 분석 결과 — LLM 호출 결과 보관 (free tier quota 절약 + 시점 비교용)
+model AiAnalysis {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  provider        String   // "gemini" | "openai" | "anthropic"
+  model           String   // 사용된 모델명 (예: gemini-2.5-flash, gpt-4o-mini)
+  summary         String
+  allocations     String
+  taxAdvice       String
+  recommendations String
+  risks           String
+  netWorthAtTime  Decimal? @db.Decimal(18, 4)
+
+  @@index([createdAt])
+}
+
 // 월별 포트폴리오 스냅샷 — 순자산 추이 차트용
 model PortfolioSnapshot {
   id          String   @id @default(cuid())

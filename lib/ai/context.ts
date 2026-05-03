@@ -1,11 +1,10 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { AccountValue, PortfolioSummary } from "@/lib/portfolio";
 import { groupHoldingsByAssetClass } from "@/lib/portfolio";
 import type { DividendIncomeSummary, ForeignGainSummary, TaxAdvantagedSummary } from "@/lib/tax";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { ASSET_CLASS_LABELS } from "@/lib/holdings/schema";
 
-function buildPortfolioContext(
+export function buildPortfolioContext(
   accounts: AccountValue[],
   summary: PortfolioSummary,
   dividend: DividendIncomeSummary,
@@ -23,7 +22,6 @@ function buildPortfolioContext(
   lines.push(`- 계좌 수: ${summary.accountCount}개, 보유 자산: ${summary.holdingCount}종`);
   lines.push("");
 
-  // 자산 배분
   const byClass = groupHoldingsByAssetClass(accounts);
   if (Object.keys(byClass).length > 0) {
     lines.push("## 자산 배분");
@@ -34,7 +32,6 @@ function buildPortfolioContext(
     lines.push("");
   }
 
-  // 계좌별 현황
   lines.push("## 계좌별 현황");
   for (const acc of accounts) {
     lines.push(`### ${acc.name} (${acc.institution ?? "-"})`);
@@ -52,7 +49,6 @@ function buildPortfolioContext(
   }
   lines.push("");
 
-  // 세금 현황
   lines.push("## 세금 현황");
   lines.push(`- 예상 연간 금융소득: ${formatCurrency(dividend.totalEstimated)}`);
   lines.push(`- 금융소득종합과세 기준 달성률: ${formatNumber(dividend.thresholdRatio * 100, 1)}%`);
@@ -72,31 +68,7 @@ function buildPortfolioContext(
   return lines.join("\n");
 }
 
-export type AiAnalysisResult = {
-  summary: string;
-  allocations: string;
-  taxAdvice: string;
-  recommendations: string;
-  risks: string;
-};
-
-export async function analyzePortfolio(
-  accounts: AccountValue[],
-  summary: PortfolioSummary,
-  dividend: DividendIncomeSummary,
-  foreignGain: ForeignGainSummary,
-  taxAdvantaged: TaxAdvantagedSummary
-): Promise<AiAnalysisResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  // 2.0-flash는 free tier에서 제한됨 (2026 기준). GEMINI_MODEL로 override 가능.
-  const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash" });
-
-  const context = buildPortfolioContext(accounts, summary, dividend, foreignGain, taxAdvantaged);
-
-  const prompt = `당신은 한국 개인 재무 전문가입니다. 아래 포트폴리오 데이터를 분석하고 JSON으로 응답해 주세요.
+export const ANALYSIS_PROMPT_TEMPLATE = (context: string) => `당신은 한국 개인 재무 전문가입니다. 아래 포트폴리오 데이터를 분석하고 JSON으로 응답해 주세요.
 
 ${context}
 
@@ -111,23 +83,3 @@ ${context}
 }
 
 JSON만 반환하고 마크다운 코드블록 없이 순수 JSON으로 응답하세요.`;
-
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
-
-  // JSON 파싱 — 코드블록 있을 경우 제거
-  const jsonText = text.startsWith("{") ? text : text.replace(/^```(?:json)?\s*/m, "").replace(/\s*```\s*$/m, "");
-
-  try {
-    return JSON.parse(jsonText) as AiAnalysisResult;
-  } catch {
-    // 파싱 실패 시 전체 텍스트를 summary에 담아 반환
-    return {
-      summary: text,
-      allocations: "",
-      taxAdvice: "",
-      recommendations: "",
-      risks: ""
-    };
-  }
-}

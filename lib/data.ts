@@ -66,6 +66,27 @@ export async function getHolding(id: string) {
   return holding;
 }
 
+export async function listAiAnalyses(limit = 20) {
+  const rows = await prisma.aiAnalysis.findMany({
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.createdAt,
+    provider: r.provider,
+    model: r.model,
+    summary: r.summary,
+    allocations: r.allocations,
+    taxAdvice: r.taxAdvice,
+    recommendations: r.recommendations,
+    risks: r.risks,
+    netWorthAtTime: r.netWorthAtTime ? Number(r.netWorthAtTime) : null,
+  }));
+}
+
+export type AiAnalysisListItem = Awaited<ReturnType<typeof listAiAnalyses>>[number];
+
 export async function getSnapshots() {
   const rows = await prisma.portfolioSnapshot.findMany({
     orderBy: { takenAt: "asc" },

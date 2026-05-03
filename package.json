@@ -13,6 +13,7 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "latest",
     "@prisma/client": "^6",
     "@radix-ui/react-label": "latest",
@@ -23,6 +24,7 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "latest",
+    "openai": "^6.35.0",
     "react": "latest",
     "react-dom": "latest",
     "recharts": "latest",
