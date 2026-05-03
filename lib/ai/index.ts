@@ -12,6 +12,7 @@ import {
   type AiProvider,
 } from "@/lib/ai/types";
 import { callAnthropic } from "@/lib/ai/providers/anthropic";
+import { callDeepSeek } from "@/lib/ai/providers/deepseek";
 import { callGemini } from "@/lib/ai/providers/gemini";
 import { callOpenAi } from "@/lib/ai/providers/openai";
 
@@ -22,6 +23,7 @@ const ADAPTERS: Record<AiProvider, AiAdapter> = {
   gemini: callGemini,
   openai: callOpenAi,
   anthropic: callAnthropic,
+  deepseek: callDeepSeek,
 };
 
 export function getAvailableProviders(): AiProvider[] {
