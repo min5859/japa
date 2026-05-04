@@ -24,12 +24,20 @@ type ActionFn = (state: DividendActionState, formData: FormData) => Promise<Divi
 
 export type DividendDefaults = Omit<
   Partial<Dividend>,
-  "amountPerShare" | "quantity" | "totalAmount" | "taxAmount" | "fxRate" | "dividendDate" | "exDividendDate"
+  | "amountPerShare"
+  | "quantity"
+  | "totalAmount"
+  | "taxAmount"
+  | "netAmount"
+  | "fxRate"
+  | "dividendDate"
+  | "exDividendDate"
 > & {
   amountPerShare?: number | string | null;
   quantity?: number | string | null;
   totalAmount?: number | string | null;
   taxAmount?: number | string | null;
+  netAmount?: number | string | null;
   fxRate?: number | string | null;
   dividendDate?: string | Date | null;
   exDividendDate?: string | Date | null;

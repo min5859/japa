@@ -66,6 +66,7 @@ export default async function EditDividendPage({
               quantity: toNumber(dividend.quantity),
               totalAmount: toNumber(dividend.totalAmount),
               taxAmount: toNumber(dividend.taxAmount),
+              netAmount: toNumber(dividend.netAmount),
               fxRate: toNumber(dividend.fxRate)
             }}
           />
