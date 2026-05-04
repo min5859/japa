@@ -9,16 +9,18 @@
 
 ## Confirmed Decisions
 
-- **Framework:** Next.js
+- **Framework:** Next.js 16 (App Router, Turbopack dev)
 - **Language:** TypeScript
-- **UI:** Tailwind CSS + shadcn/ui
+- **UI:** Tailwind CSS 4 + shadcn/ui
 - **Charts:** Recharts
-- **Database Platform:** Supabase
-- **Database Engine:** PostgreSQL
-- **ORM:** Prisma
-- **AI Integration:** Gemini API
-- **Market Data:** Yahoo Finance free API
+- **Database Platform:** Supabase (PostgreSQL, ap-south-1)
+- **ORM:** Prisma 6 (PgBouncer pooled)
+- **Validation:** Zod (per-entity schema in `lib/<entity>/schema.ts`, Prisma enum SSOT)
+- **Markdown Rendering:** react-markdown + remark-gfm (assistant messages)
+- **AI Integration:** Multi-provider LLM (Gemini / OpenAI / Anthropic / DeepSeek) — 환경변수에 키가 있는 provider만 UI 노출. Provider별 default 모델은 `lib/ai/types.ts` 참조, 환경변수(`<PROVIDER>_MODEL`)로 override 가능.
+- **Market Data:** Yahoo Finance (yahoo-finance2)
 - **Data Input:** Manual input only
+- **Auth:** ADMIN_PASSWORD + HMAC SESSION_COOKIE (1인 전용, Vercel 배포 후 Supabase Auth로 전환 검토 — `tasks/plan-2026-05-03-japa-s-features.md` 참조)
 
 ## Major Requirements
 
@@ -29,67 +31,43 @@
 5. Use AI based on asset data for comprehensive financial management support.
 6. Use Yahoo Finance as the free stock price source.
 
+## Implemented Features (current)
+
+- **Pages:** `/` Dashboard, `/accounts`, `/holdings`, `/groups`, `/dividends`, `/quote`, `/market`, `/tax`, `/ai` (분석), `/chat` (재무 상담), `/login`
+- **Domain models:** Account, AccountGroup (N:M), Holding, Dividend, PriceCache, MarketIndex, MarketIndexHistory, PortfolioSnapshot, AiAnalysis, ChatThread, ChatMessage
+- **AI 분석 (`/ai`):** 4-provider 중 선택, 결과 DB 저장, 이전 분석 히스토리 + 삭제
+- **AI 채팅 (`/chat`):** Provider별 어댑터(`lib/ai/providers/*.ts`), 매 메시지마다 최신 포트폴리오 컨텍스트를 system prompt로 주입, 스레드/메시지 영구 저장, 마크다운(GFM 표 포함) 렌더링
+- **Cron 자동화 (`/api/cron/daily`):** 매일 22:00 UTC — 시세·지수·지수 history 갱신 / 매월 1일 스냅샷 / 매년 1/1 contributionYTD 리셋
+- **Export:** accounts/holdings/dividends/snapshots CSV (`/api/export/[type]`)
+- **Sidebar layout:** 데스크톱 고정 사이드바 + 모바일 슬라이드 오버 (`components/layout/app-shell.tsx`)
+
 ## Recommended Additional Features
 
-1. Unified net worth summary
-   - total assets
-   - cash
-   - investments
-   - liabilities
-   - net worth
-2. Tax-advantaged account contribution limit tracking
-3. Tax event warnings dashboard
-4. Monthly asset snapshot history
-5. Target allocation vs current allocation
-6. Dividend and interest cashflow view
-7. FX impact breakdown for overseas assets
-8. Notes per account or holding
+- ✅ Unified net worth summary (총자산/현금/투자/부채/순자산)
+- ✅ Tax-advantaged account contribution limit tracking
+- ✅ Tax event warnings dashboard
+- ✅ Monthly asset snapshot history
+- ⬜ Target allocation vs current allocation (`tasks/todo-2026-05-03.md` backlog)
+- ✅ Dividend and interest cashflow view
+- ✅ FX impact breakdown for overseas assets
+- ✅ Notes per account or holding
 
 ## Delivery Principles
 
 - Do not start implementation unless the user explicitly asks to start.
 - Prefer phased implementation over broad all-at-once delivery.
-- Keep the first release focused on core dashboard, account management, tax tracking, and AI summaries.
 - Design for maintainability and personal use, not multi-tenant SaaS complexity.
-
-## Suggested Initial Phases
-
-### Phase 1
-- project setup
-- base UI shell
-- database schema
-- account and holding models
-
-### Phase 2
-- account CRUD
-- holdings CRUD
-- unified dashboard summary
-
-### Phase 3
-- Yahoo Finance price and FX integration
-- valuation updates
-
-### Phase 4
-- tax calculations
-  - comprehensive financial income tax support
-  - overseas stock capital gains tracking
-
-### Phase 5
-- Gemini-powered financial analysis and recommendations
-
-### Phase 6
-- charts
-- monthly snapshots
-- polish and deployment finishing
+- 추가 기능 후보는 `tasks/todo-2026-05-03.md` (backlog)와 `tasks/plan-2026-05-03-japa-s-features.md`(인증·암호화·Zod 통합 계획)를 참조.
 
 ## Working Rules for Agents
 
 - Read this file before making project-level decisions.
 - Respect confirmed decisions unless the user changes them.
 - Do not replace the chosen stack without clear justification and user approval.
-- Keep commits scoped to a single logical unit of change so review is easy.
-- Prefer small, reviewable commits over large mixed commits.
-- Verify meaningful changes before reporting completion.
+- Verify meaningful changes before reporting completion (`npm run typecheck`).
+- DB write는 server action 또는 API route에서만. Prisma Decimal은 `toNumber()` (`lib/utils.ts`) 사용.
+- 라벨/옵션은 entity별 `lib/<entity>/schema.ts` 또는 공유 enum용 `lib/labels.ts`에 둔다 (단일 진실 원천).
+- 폼 검증은 entity schema의 Zod 스키마를 server action·client 양쪽에서 import.
 
 ### Commit Message Format
 
