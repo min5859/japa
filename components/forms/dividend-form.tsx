@@ -1,13 +1,15 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import type { Dividend } from "@prisma/client";
+import { useActionState, useState, useTransition } from "react";
+import type { Currency, Dividend } from "@prisma/client";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { DividendActionState } from "@/app/actions/dividends";
+import { getFxRateAction } from "@/app/actions/symbols";
 import { CURRENCIES } from "@/lib/labels";
 
 type AccountOption = { id: string; name: string; institution: string | null };
@@ -69,6 +71,11 @@ export function DividendForm({
   const [quantity, setQuantity] = useState<string>(
     defaultValues?.quantity?.toString() ?? "0"
   );
+  const [fxRate, setFxRate] = useState<string>(
+    defaultValues?.fxRate?.toString() ?? "1"
+  );
+  const [fxError, setFxError] = useState<string | null>(null);
+  const [fxLoading, startFxFetch] = useTransition();
   const [taxOverride, setTaxOverride] = useState<boolean>(
     defaultValues?.isTaxOverridden ?? false
   );
@@ -77,6 +84,27 @@ export function DividendForm({
     ? holdings.filter((h) => h.accountId === accountId)
     : holdings;
 
+  function fetchFx(next: string) {
+    setFxError(null);
+    if (next === "KRW") {
+      setFxRate("1");
+      return;
+    }
+    startFxFetch(async () => {
+      const result = await getFxRateAction(next as Currency);
+      if (result.ok) {
+        setFxRate(String(result.rate));
+      } else {
+        setFxError(result.error);
+      }
+    });
+  }
+
+  function handleCurrencyChange(next: string) {
+    setCurrency(next);
+    fetchFx(next);
+  }
+
   function handleHoldingChange(id: string) {
     setHoldingId(id);
     if (!id) return;
@@ -84,8 +112,8 @@ export function DividendForm({
     if (!h) return;
     setAccountId(h.accountId);
     setSymbol(h.symbol ?? "");
-    setCurrency(h.currency);
     setQuantity(h.quantity);
+    if (h.currency !== currency) handleCurrencyChange(h.currency);
   }
 
   return (
@@ -215,7 +243,7 @@ export function DividendForm({
             id="currency"
             name="currency"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={(e) => handleCurrencyChange(e.target.value)}
           >
             {CURRENCIES.map(({ value, label }) => (
               <option key={value} value={value}>
@@ -225,15 +253,37 @@ export function DividendForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="fxRate">환율 (원화 기준)</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="fxRate">환율 (원화 기준)</Label>
+            {currency !== "KRW" && (
+              <button
+                type="button"
+                onClick={() => fetchFx(currency)}
+                disabled={fxLoading}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                title="최근 환율 다시 가져오기"
+              >
+                <RefreshCw className={`h-3 w-3 ${fxLoading ? "animate-spin" : ""}`} />
+                새로고침
+              </button>
+            )}
+          </div>
           <Input
             id="fxRate"
             name="fxRate"
             type="number"
             step="0.00000001"
             placeholder="1"
-            defaultValue={defaultValues?.fxRate?.toString() ?? "1"}
+            value={fxRate}
+            onChange={(e) => setFxRate(e.target.value)}
+            disabled={fxLoading}
           />
+          {fxError && <p className="text-xs text-destructive">{fxError}</p>}
+          {currency !== "KRW" && !fxError && (
+            <p className="text-xs text-muted-foreground">
+              통화 선택 시 자동 채움. 직접 수정 가능.
+            </p>
+          )}
         </div>
       </div>
 
