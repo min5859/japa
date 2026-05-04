@@ -93,8 +93,23 @@
 
 ### Commit Message Format
 
-- Subject: Conventional Commits prefix (`feat:`/`fix:`/`chore:`/`docs:`/`refactor:`/`test:`), 영문, 70자 이하.
+- Subject: Conventional Commits prefix (`feat:`/`fix:`/`chore:`/`docs:`/`refactor:`/`test:`/`perf:`), 영문, 70자 이하. scope는 필요 시 `feat(chat):` 형태로.
 - Body 필수: **무엇을** 했는지가 아니라 **왜** 필요했는지(원인·맥락·대안·미루는 작업)를 한국어로 적는다.
+- AI 도구로 작성한 커밋은 `Co-Authored-By: <model> <noreply@anthropic.com>` trailer를 추가한다.
+
+### Commit Splitting Rules
+
+- **한 커밋 = 한 논리적 단위.** 변경 사유가 둘 이상이면 분리한다.
+  - 분리 예: 모델 default 변경 + 새 기능 → 두 커밋
+  - 분리 예: 버그 수정 + 무관한 리팩터링 → 두 커밋
+  - 분리 예: 계획 문서 추가 + 그 계획의 첫 구현 → 두 커밋 (docs + feat/refactor)
+- **묶어도 되는 경우.** 같은 작업 흐름에서 함께 발생하면 한 커밋 OK.
+  - 예: 신규 모델 + 마이그레이션 + server action + UI (한 기능을 위한 풀 스택 변경)
+  - 예: deps 추가(`package.json`/`package-lock.json`) + 그 deps를 쓰는 코드
+- **자동 생성 파일은 staging에서 제외한다.** 작업과 무관하게 자동 갱신되는 파일은 본 커밋에 섞지 않고 별도 또는 다음 작업에 묶는다.
+  - 대상 예: `next-env.d.ts`, `.next/types/*`, `tsconfig.tsbuildinfo`
+- **DB 스키마 변경과 사용 코드는 같이 묶는다.** 마이그레이션만 먼저 커밋하면 중간 상태가 깨지므로 prisma migration + 그 컬럼을 쓰는 코드를 한 커밋에.
+- **`git add .` / `git add -A` 금지.** 의도한 파일/디렉터리를 명시적으로 add 한다.
 
 ## Notes on Agent Compatibility
 
