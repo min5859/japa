@@ -5,6 +5,7 @@ import { Send, User, Bot, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { MarkdownMessage } from "@/components/markdown-message";
 import { sendMessage } from "@/app/actions/chat";
 import type { AiProvider } from "@/lib/ai";
 import { useAvailableProviders } from "../chat-shell";
@@ -147,8 +148,12 @@ export function ChatThreadClient({
                   {m.provider && <span>· {m.provider}/{m.model}</span>}
                   <span>· {formatTime(m.createdAt)}</span>
                 </div>
-                <div className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">
-                  {m.content}
+                <div className="mt-1 min-w-0">
+                  {m.role === "assistant" ? (
+                    <MarkdownMessage>{m.content}</MarkdownMessage>
+                  ) : (
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">{m.content}</div>
+                  )}
                 </div>
               </div>
             </div>

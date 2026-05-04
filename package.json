@@ -27,7 +27,9 @@
     "openai": "^6.35.0",
     "react": "latest",
     "react-dom": "latest",
+    "react-markdown": "^10.1.0",
     "recharts": "latest",
+    "remark-gfm": "^4.0.1",
     "tailwind-merge": "latest",
     "yahoo-finance2": "latest",
     "zod": "latest"
