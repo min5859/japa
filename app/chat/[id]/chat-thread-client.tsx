@@ -9,6 +9,7 @@ import { MarkdownMessage } from "@/components/markdown-message";
 import { sendMessage } from "@/app/actions/chat";
 import type { AiProvider } from "@/lib/ai";
 import { useAvailableProviders } from "../chat-shell";
+import { formatTime } from "@/lib/utils";
 
 type Message = {
   id: string;
@@ -18,14 +19,6 @@ type Message = {
   model: string | null;
   createdAt: Date;
 };
-
-function formatTime(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export function ChatThreadClient({
   threadId,

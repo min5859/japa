@@ -35,3 +35,21 @@ export function formatNumber(value: number, maximumFractionDigits = 2) {
     maximumFractionDigits
   }).format(value);
 }
+
+// SSR/CSR hydration 일치를 위해 Intl.DateTimeFormat 대신 직접 조립.
+// (Node와 브라우저의 ICU 데이터 차이로 ko-KR 출력이 어긋나는 문제 회피)
+export function formatDateTime(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const M = String(date.getMonth() + 1).padStart(2, "0");
+  const D = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const m = String(date.getMinutes()).padStart(2, "0");
+  return `${M}/${D} ${h}:${m}`;
+}
+
+export function formatTime(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const h = String(date.getHours()).padStart(2, "0");
+  const m = String(date.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}

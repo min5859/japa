@@ -8,21 +8,12 @@ import { Button } from "@/components/ui/button";
 import { createThread, deleteThread } from "@/app/actions/chat";
 import type { ChatThreadListItem } from "@/lib/data";
 import type { AiProvider } from "@/lib/ai";
+import { formatDateTime } from "@/lib/utils";
 
 type ProviderOption = { value: AiProvider; label: string };
 
 const ProvidersContext = createContext<ProviderOption[]>([]);
 export const useAvailableProviders = () => useContext(ProvidersContext);
-
-function formatTime(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export function ChatShell({
   threads,
@@ -85,7 +76,7 @@ export function ChatShell({
                   >
                     <div className="truncate font-medium">{t.title ?? "(제목 없음)"}</div>
                     <div className="text-[10px] text-muted-foreground">
-                      {formatTime(t.updatedAt)} · {t._count.messages}개 메시지
+                      {formatDateTime(t.updatedAt)} · {t._count.messages}개 메시지
                     </div>
                   </Link>
                   <button

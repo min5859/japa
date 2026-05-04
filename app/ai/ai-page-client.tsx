@@ -17,7 +17,7 @@ import type { AiAnalysisListItem } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 const SECTIONS: {
   key: keyof AiAnalysisResult;
@@ -31,16 +31,6 @@ const SECTIONS: {
   { key: "recommendations", label: "투자 개선 제안", icon: Lightbulb, color: "text-yellow-400" },
   { key: "risks", label: "리스크 및 주의사항", icon: AlertCircle, color: "text-red-400" },
 ];
-
-function formatTime(d: Date | string): string {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
 
 export function AiPageClient({
   availableProviders,
@@ -181,7 +171,7 @@ export function AiPageClient({
       {selected && (
         <>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span>{formatTime(selected.createdAt)}</span>
+            <span>{formatDateTime(selected.createdAt)}</span>
             <span>·</span>
             <span>{selected.provider} / {selected.model}</span>
             {selected.netWorthAtTime != null && (
@@ -239,7 +229,7 @@ export function AiPageClient({
                     onClick={() => setSelectedId(a.id)}
                     className="flex-1 text-left"
                   >
-                    <div className="font-medium">{formatTime(a.createdAt)}</div>
+                    <div className="font-medium">{formatDateTime(a.createdAt)}</div>
                     <div className="text-xs text-muted-foreground">
                       {a.provider} / {a.model}
                       {a.netWorthAtTime != null && (
