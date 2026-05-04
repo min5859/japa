@@ -15,10 +15,12 @@ function extractText(blocks: Anthropic.ContentBlock[]): string {
     .trim();
 }
 
+const MAX_TOKENS = 8192;
+
 export const callAnthropic: AiAdapter = async (prompt, model) => {
   const message = await getClient().messages.create({
     model,
-    max_tokens: 2048,
+    max_tokens: MAX_TOKENS,
     messages: [{ role: "user", content: prompt }],
   });
   return extractText(message.content);
@@ -27,7 +29,7 @@ export const callAnthropic: AiAdapter = async (prompt, model) => {
 export const chatAnthropic: ChatAdapter = async (system, messages, model) => {
   const message = await getClient().messages.create({
     model,
-    max_tokens: 2048,
+    max_tokens: MAX_TOKENS,
     system,
     messages,
   });

@@ -7,14 +7,20 @@ function getClient() {
   return new GoogleGenerativeAI(apiKey);
 }
 
+const GENERATION_CONFIG = { maxOutputTokens: 8192 };
+
 export const callGemini: AiAdapter = async (prompt, model) => {
-  const m = getClient().getGenerativeModel({ model });
+  const m = getClient().getGenerativeModel({ model, generationConfig: GENERATION_CONFIG });
   const result = await m.generateContent(prompt);
   return result.response.text().trim();
 };
 
 export const chatGemini: ChatAdapter = async (system, messages, model) => {
-  const m = getClient().getGenerativeModel({ model, systemInstruction: system });
+  const m = getClient().getGenerativeModel({
+    model,
+    systemInstruction: system,
+    generationConfig: GENERATION_CONFIG,
+  });
   // Gemini는 user/model 역할 사용. 마지막 user 메시지를 sendMessage로 전달.
   const history = messages.slice(0, -1).map((msg) => ({
     role: msg.role === "assistant" ? "model" : "user",
