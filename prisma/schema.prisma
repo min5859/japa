@@ -159,6 +159,30 @@ model Dividend {
   @@index([symbol])
 }
 
+// 재무 상담 채팅 — 포트폴리오 컨텍스트 기반 LLM 대화
+model ChatThread {
+  id        String        @id @default(cuid())
+  title     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  ChatMessage[]
+
+  @@index([updatedAt])
+}
+
+model ChatMessage {
+  id        String     @id @default(cuid())
+  threadId  String
+  role      String     // "user" | "assistant"
+  content   String
+  provider  String?    // assistant 메시지에만 채움
+  model     String?
+  createdAt DateTime   @default(now())
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
+
 // AI 분석 결과 — LLM 호출 결과 보관 (free tier quota 절약 + 시점 비교용)
 model AiAnalysis {
   id              String   @id @default(cuid())

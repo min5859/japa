@@ -20,9 +20,9 @@ export const PROVIDER_ENV_KEYS: Record<AiProvider, string> = {
 };
 
 export const PROVIDER_DEFAULT_MODELS: Record<AiProvider, string> = {
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-3-flash",
   openai: "gpt-4o-mini",
-  anthropic: "claude-haiku-4-5-20251001",
+  anthropic: "claude-sonnet-4-6",
   deepseek: "deepseek-chat",
 };
 
@@ -52,3 +52,15 @@ export const EMPTY_ANALYSIS: AiAnalysisResult = {
 
 // 각 provider 어댑터가 구현하는 단일 메서드.
 export type AiAdapter = (prompt: string, model: string) => Promise<string>;
+
+// 채팅 메시지 형식 (provider-agnostic). assistant/user만 허용 (system은 별도 인자).
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export type ChatAdapter = (
+  systemPrompt: string,
+  messages: ChatMessage[],
+  model: string
+) => Promise<string>;

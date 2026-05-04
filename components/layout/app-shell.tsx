@@ -10,6 +10,7 @@ import {
   FolderOpen,
   Landmark,
   Layers3,
+  MessageCircle,
   Menu,
   Receipt,
   Search,
@@ -32,7 +33,8 @@ const NAV: NavItem[] = [
   { href: "/quote", label: "시세조회", icon: Search },
   { href: "/market", label: "Market", icon: TrendingUp },
   { href: "/tax", label: "세금", icon: Receipt },
-  { href: "/ai", label: "AI 분석", icon: Bot }
+  { href: "/ai", label: "AI 분석", icon: Bot },
+  { href: "/chat", label: "AI 채팅", icon: MessageCircle }
 ];
 
 function isItemActive(itemHref: string, pathname: string) {

@@ -87,6 +87,31 @@ export async function listAiAnalyses(limit = 20) {
 
 export type AiAnalysisListItem = Awaited<ReturnType<typeof listAiAnalyses>>[number];
 
+export async function listChatThreads(limit = 30) {
+  return prisma.chatThread.findMany({
+    orderBy: { updatedAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      createdAt: true,
+      updatedAt: true,
+      _count: { select: { messages: true } },
+    },
+  });
+}
+
+export type ChatThreadListItem = Awaited<ReturnType<typeof listChatThreads>>[number];
+
+export async function getChatThread(id: string) {
+  return prisma.chatThread.findUnique({
+    where: { id },
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+  });
+}
+
+export type ChatThreadWithMessages = NonNullable<Awaited<ReturnType<typeof getChatThread>>>;
+
 export async function getSnapshots() {
   const rows = await prisma.portfolioSnapshot.findMany({
     orderBy: { takenAt: "asc" },

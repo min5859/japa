@@ -68,6 +68,12 @@ export function buildPortfolioContext(
   return lines.join("\n");
 }
 
+export const CHAT_SYSTEM_PROMPT = (context: string) => `당신은 한국 개인 재무 상담 전문가입니다. 아래는 사용자의 현재 재무 데이터입니다. 이 데이터를 근거로 한국어로 정확하고 친절하게 답변하세요. 일반적 조언이 아니라 사용자 본인의 데이터를 인용하며 답하세요. 불확실한 부분은 추측하지 말고 명시하세요.
+
+${context}
+
+— 데이터 끝 —`;
+
 export const ANALYSIS_PROMPT_TEMPLATE = (context: string) => `당신은 한국 개인 재무 전문가입니다. 아래 포트폴리오 데이터를 분석하고 JSON으로 응답해 주세요.
 
 ${context}

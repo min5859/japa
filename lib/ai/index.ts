@@ -10,13 +10,15 @@ import {
   type AiAdapter,
   type AiAnalysisResult,
   type AiProvider,
+  type ChatAdapter,
+  type ChatMessage,
 } from "@/lib/ai/types";
-import { callAnthropic } from "@/lib/ai/providers/anthropic";
-import { callDeepSeek } from "@/lib/ai/providers/deepseek";
-import { callGemini } from "@/lib/ai/providers/gemini";
-import { callOpenAi } from "@/lib/ai/providers/openai";
+import { callAnthropic, chatAnthropic } from "@/lib/ai/providers/anthropic";
+import { callDeepSeek, chatDeepSeek } from "@/lib/ai/providers/deepseek";
+import { callGemini, chatGemini } from "@/lib/ai/providers/gemini";
+import { callOpenAi, chatOpenAi } from "@/lib/ai/providers/openai";
 
-export type { AiAnalysisResult, AiProvider } from "@/lib/ai/types";
+export type { AiAnalysisResult, AiProvider, ChatMessage } from "@/lib/ai/types";
 export { PROVIDERS, PROVIDER_LABELS } from "@/lib/ai/types";
 
 const ADAPTERS: Record<AiProvider, AiAdapter> = {
@@ -24,6 +26,13 @@ const ADAPTERS: Record<AiProvider, AiAdapter> = {
   openai: callOpenAi,
   anthropic: callAnthropic,
   deepseek: callDeepSeek,
+};
+
+const CHAT_ADAPTERS: Record<AiProvider, ChatAdapter> = {
+  gemini: chatGemini,
+  openai: chatOpenAi,
+  anthropic: chatAnthropic,
+  deepseek: chatDeepSeek,
 };
 
 export function getAvailableProviders(): AiProvider[] {
@@ -46,6 +55,17 @@ function parseJsonResult(text: string): AiAnalysisResult {
   } catch {
     return { ...EMPTY_ANALYSIS, summary: text };
   }
+}
+
+export async function chat(
+  provider: AiProvider,
+  systemPrompt: string,
+  messages: ChatMessage[]
+): Promise<{ reply: string; model: string }> {
+  const adapter = CHAT_ADAPTERS[provider];
+  const model = resolveModel(provider);
+  const reply = await adapter(systemPrompt, messages, model);
+  return { reply, model };
 }
 
 export async function analyzePortfolio(

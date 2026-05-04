@@ -1,21 +1,35 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { AiAdapter } from "@/lib/ai/types";
+import type { AiAdapter, ChatAdapter } from "@/lib/ai/types";
 
-export const callAnthropic: AiAdapter = async (prompt, model) => {
+function getClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
+  return new Anthropic({ apiKey });
+}
 
-  const client = new Anthropic({ apiKey });
-  const message = await client.messages.create({
-    model,
-    max_tokens: 2048,
-    messages: [{ role: "user", content: prompt }],
-  });
-  // text block만 추출
-  const text = message.content
+function extractText(blocks: Anthropic.ContentBlock[]): string {
+  return blocks
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("\n")
     .trim();
-  return text;
+}
+
+export const callAnthropic: AiAdapter = async (prompt, model) => {
+  const message = await getClient().messages.create({
+    model,
+    max_tokens: 2048,
+    messages: [{ role: "user", content: prompt }],
+  });
+  return extractText(message.content);
+};
+
+export const chatAnthropic: ChatAdapter = async (system, messages, model) => {
+  const message = await getClient().messages.create({
+    model,
+    max_tokens: 2048,
+    system,
+    messages,
+  });
+  return extractText(message.content);
 };
