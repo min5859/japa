@@ -1,6 +1,6 @@
 import YahooFinance from "yahoo-finance2";
 import { prisma } from "@/lib/prisma";
-import type { Currency } from "@prisma/client";
+import type { PrismaClient, Currency } from "@prisma/client";
 
 const yahooFinance = new YahooFinance({ suppressNotices: ["yahooSurvey", "ripHistorical"] });
 
@@ -221,7 +221,10 @@ export type RefreshSymbolsResult = {
 };
 
 /** Fetch live prices for a list of symbols and upsert into PriceCache. */
-export async function refreshSymbols(symbols: string[]): Promise<RefreshSymbolsResult> {
+export async function refreshSymbols(
+  symbols: string[],
+  db: PrismaClient = prisma
+): Promise<RefreshSymbolsResult> {
   const unique = [...new Set(symbols.filter(Boolean))];
   const prices = new Map<string, number>();
   const failed: { symbol: string; reason: string }[] = [];
@@ -233,7 +236,7 @@ export async function refreshSymbols(symbols: string[]): Promise<RefreshSymbolsR
       if (price !== null) {
         prices.set(symbol, price);
         await withPrismaLock(() =>
-          prisma.priceCache.upsert({
+          db.priceCache.upsert({
             where: { symbol },
             update: { price, fetchedAt: new Date() },
             create: { symbol, price }
@@ -255,17 +258,17 @@ export async function refreshSymbols(symbols: string[]): Promise<RefreshSymbolsR
 }
 
 /** Collect all symbols (holdings + FX) that need refreshing and update cache. */
-export async function refreshAllPrices(): Promise<{
+export async function refreshAllPrices(db: PrismaClient = prisma): Promise<{
   updated: number;
   attempted: number;
   failed: { symbol: string; reason: string }[];
   skippedNoSymbol: { id: string; name: string }[];
 }> {
   const [holdings, accounts] = await Promise.all([
-    prisma.holding.findMany({
+    db.holding.findMany({
       select: { id: true, name: true, symbol: true, currency: true }
     }),
-    prisma.account.findMany({
+    db.account.findMany({
       select: { currency: true },
       distinct: ["currency"]
     })
@@ -298,7 +301,7 @@ export async function refreshAllPrices(): Promise<{
     }
   }
 
-  const { prices, failed } = await refreshSymbols(symbols);
+  const { prices, failed } = await refreshSymbols(symbols, db);
   return {
     updated: prices.size,
     attempted: symbols.length,
@@ -339,7 +342,7 @@ const EMPTY_INDICES: MarketIndexRow[] = INDICES_CONFIG.map(
   })
 );
 
-export async function refreshMarketIndices(): Promise<number> {
+export async function refreshMarketIndices(db: PrismaClient = prisma): Promise<number> {
   let updated = 0;
   await Promise.allSettled(
     INDICES_CONFIG.map(async ({ symbol, name, currency, isYield }) => {
@@ -354,7 +357,7 @@ export async function refreshMarketIndices(): Promise<number> {
         }
         const changePercent = Number((((price - previousClose) / previousClose) * 100).toFixed(4));
         await withPrismaLock(() =>
-          prisma.marketIndex.upsert({
+          db.marketIndex.upsert({
             where: { symbol },
             update: { name, price, previousClose, changePercent, currency, isYield, fetchedAt: new Date() },
             create: { symbol, name, price, previousClose, changePercent, currency, isYield }
@@ -385,7 +388,7 @@ export async function getMarketIndices(): Promise<MarketIndexRow[]> {
 
 export type HistoryPoint = { date: string; value: number };
 
-export async function refreshMarketHistory(): Promise<void> {
+export async function refreshMarketHistory(db: PrismaClient = prisma): Promise<void> {
   // Only fetch a short trailing window: yesterday/today is the only row that
   // changes, and a full 1-year pull on 9 symbols pushes the lambda past 60s.
   // skipDuplicates keeps the existing year of rows untouched; gaps after long
@@ -418,10 +421,10 @@ export async function refreshMarketHistory(): Promise<void> {
         // today's row gets refreshed by overwriting via a targeted upsert.
         const today = data[data.length - 1];
         await withPrismaLock(() =>
-          prisma.marketIndexHistory.createMany({ data, skipDuplicates: true })
+          db.marketIndexHistory.createMany({ data, skipDuplicates: true })
         );
         await withPrismaLock(() =>
-          prisma.marketIndexHistory.upsert({
+          db.marketIndexHistory.upsert({
             where: { symbol_date: { symbol, date: today.date } },
             update: { open: today.open, high: today.high, low: today.low, close: today.close },
             create: today

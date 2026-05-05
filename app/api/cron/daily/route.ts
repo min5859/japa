@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prismaDirect } from "@/lib/prisma";
 import { refreshAllPrices, refreshMarketHistory, refreshMarketIndices } from "@/lib/market";
 import { createSnapshot } from "@/lib/snapshot";
 
@@ -31,12 +31,13 @@ export async function GET(request: NextRequest) {
   const stamp = (label: string) => console.error(`[cron] ${label} +${Date.now() - t0}ms`);
   stamp("start");
 
-  // yahoo fetches run in parallel; prisma writes are serialized inside
-  // lib/market via withPrismaLock to respect connection_limit=1.
+  // Use prismaDirect (bypasses PgBouncer) so per-query connection acquire
+  // doesn't pile up under the lambda's 60s budget. yahoo fetches stay parallel;
+  // prisma writes are still queued through withPrismaLock inside lib/market.
   const [portfolio, indicesUpdated] = await Promise.all([
-    refreshAllPrices().then((r) => { stamp("refreshAllPrices done"); return r; }),
-    refreshMarketIndices().then((r) => { stamp("refreshMarketIndices done"); return r; }),
-    refreshMarketHistory().then((r) => { stamp("refreshMarketHistory done"); return r; })
+    refreshAllPrices(prismaDirect).then((r) => { stamp("refreshAllPrices done"); return r; }),
+    refreshMarketIndices(prismaDirect).then((r) => { stamp("refreshMarketIndices done"); return r; }),
+    refreshMarketHistory(prismaDirect).then((r) => { stamp("refreshMarketHistory done"); return r; })
   ]);
   stamp("all-three done");
   ran.push(
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   if (isFirstOfMonth) {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recent = await prisma.portfolioSnapshot.count({
+    const recent = await prismaDirect.portfolioSnapshot.count({
       where: { takenAt: { gte: dayAgo } }
     });
     if (recent === 0) {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (isJanFirst) {
-    const reset = await prisma.account.updateMany({
+    const reset = await prismaDirect.account.updateMany({
       where: { isTaxAdvantaged: true },
       data: { contributionYTD: 0 }
     });
