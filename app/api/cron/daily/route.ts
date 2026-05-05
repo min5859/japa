@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { refreshAllPrices, refreshMarketHistory, refreshMarketIndices } from "@/lib/market";
 import { createSnapshot } from "@/lib/snapshot";
 
+console.error("[cron] module loaded", new Date().toISOString());
+
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
@@ -12,10 +14,12 @@ function nowKST(): Date {
 }
 
 export async function GET(request: NextRequest) {
+  console.error("[cron] handler enter", new Date().toISOString());
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  console.error("[cron] auth ok");
 
   const kst = nowKST();
   const isJanFirst = kst.getUTCMonth() === 0 && kst.getUTCDate() === 1;
@@ -24,7 +28,7 @@ export async function GET(request: NextRequest) {
   const ran: string[] = [];
 
   const t0 = Date.now();
-  const stamp = (label: string) => console.log(`[cron] ${label} +${Date.now() - t0}ms`);
+  const stamp = (label: string) => console.error(`[cron] ${label} +${Date.now() - t0}ms`);
   stamp("start");
 
   // yahoo fetches run in parallel; prisma writes are serialized inside
