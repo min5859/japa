@@ -1,25 +1,28 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  const { prisma } = await import("@/lib/prisma");
-  const { refreshMarketIndices, refreshMarketHistory } = await import("@/lib/market");
+  // First-time backfill helper. Must NEVER block lambda startup: any DB call
+  // here happens before request handlers run, and on PgBouncer the cold
+  // connection acquire can stall long enough to push the whole invocation
+  // past the 60s budget. Fire-and-forget + best-effort.
+  void (async () => {
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const { refreshMarketIndices, refreshMarketHistory } = await import("@/lib/market");
 
-  // Sequential: PgBouncer transaction mode pins connection_limit=1, so even
-  // these two counts must not overlap or they race for the single connection.
-  const indexCount = await prisma.marketIndex.count();
-  const historyCount = await prisma.marketIndexHistory.count();
+      const indexCount = await prisma.marketIndex.count();
+      if (indexCount === 0) {
+        console.log("[instrumentation] MarketIndex 초기 데이터 fetch 중...");
+        await refreshMarketIndices();
+      }
 
-  const tasks: Promise<unknown>[] = [];
-  if (indexCount === 0) {
-    console.log("[instrumentation] MarketIndex 초기 데이터 fetch 중...");
-    tasks.push(refreshMarketIndices());
-  }
-  if (historyCount === 0) {
-    console.log("[instrumentation] MarketIndexHistory 1년치 fetch 중...");
-    tasks.push(refreshMarketHistory());
-  }
-  if (tasks.length > 0) {
-    await Promise.all(tasks);
-    console.log("[instrumentation] 완료");
-  }
+      const historyCount = await prisma.marketIndexHistory.count();
+      if (historyCount === 0) {
+        console.log("[instrumentation] MarketIndexHistory 백필 중...");
+        await refreshMarketHistory();
+      }
+    } catch (e) {
+      console.warn("[instrumentation] backfill skipped:", e);
+    }
+  })();
 }
