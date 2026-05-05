@@ -386,8 +386,12 @@ export async function getMarketIndices(): Promise<MarketIndexRow[]> {
 export type HistoryPoint = { date: string; value: number };
 
 export async function refreshMarketHistory(): Promise<void> {
+  // Only fetch a short trailing window: yesterday/today is the only row that
+  // changes, and a full 1-year pull on 9 symbols pushes the lambda past 60s.
+  // skipDuplicates keeps the existing year of rows untouched; gaps after long
+  // outages can be backfilled manually via fetchSymbolHistory.
   const period1 = new Date();
-  period1.setFullYear(period1.getFullYear() - 1);
+  period1.setDate(period1.getDate() - 7);
 
   await Promise.allSettled(
     INDICES_CONFIG.map(async ({ symbol }) => {
