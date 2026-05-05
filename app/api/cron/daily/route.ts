@@ -23,11 +23,12 @@ export async function GET(request: NextRequest) {
 
   const ran: string[] = [];
 
-  const [portfolio, indicesUpdated] = await Promise.all([
-    refreshAllPrices(),
-    refreshMarketIndices(),
-    refreshMarketHistory()
-  ]);
+  // Serialize: PgBouncer transaction mode forces connection_limit=1, so
+  // overlapping prisma calls inside one lambda race for a single connection
+  // and trip P2024 (pool timeout). yahoo fetches are fast enough at 60s.
+  const portfolio = await refreshAllPrices();
+  const indicesUpdated = await refreshMarketIndices();
+  await refreshMarketHistory();
   ran.push(
     `portfolioPrices(${portfolio.updated}/${portfolio.attempted})`,
     `indices(${indicesUpdated})`,

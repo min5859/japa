@@ -183,8 +183,12 @@ export async function fetchSymbolHistory(symbol: string, days = 365): Promise<Hi
   }
 }
 
-/** Limit Yahoo concurrent requests; spike of 30+ parallel quotes intermittently produces missing fields. */
-const REFRESH_CONCURRENCY = 6;
+/**
+ * Concurrency must stay at 1: PgBouncer transaction mode pins prisma to
+ * connection_limit=1, so any overlap of upserts trips P2024 pool timeout.
+ * Yahoo round-trips are quick enough that serial calls fit in the 60s lambda.
+ */
+const REFRESH_CONCURRENCY = 1;
 const REFRESH_RETRIES = 1;
 
 async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -325,29 +329,28 @@ const EMPTY_INDICES: MarketIndexRow[] = INDICES_CONFIG.map(
 
 export async function refreshMarketIndices(): Promise<number> {
   let updated = 0;
-  await Promise.allSettled(
-    INDICES_CONFIG.map(async ({ symbol, name, currency, isYield }) => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const q: any = await yahooFinance.quote(symbol);
-        const price: number | undefined = q?.regularMarketPrice;
-        const previousClose: number | undefined = q?.regularMarketPreviousClose ?? q?.regularMarketOpen;
-        if (price == null || !previousClose) {
-          console.warn(`[MarketIndex] ${symbol}: price=${price} previousClose=${previousClose}`);
-          return;
-        }
-        const changePercent = Number((((price - previousClose) / previousClose) * 100).toFixed(4));
-        await prisma.marketIndex.upsert({
-          where: { symbol },
-          update: { name, price, previousClose, changePercent, currency, isYield, fetchedAt: new Date() },
-          create: { symbol, name, price, previousClose, changePercent, currency, isYield }
-        });
-        updated++;
-      } catch (e) {
-        console.error(`[MarketIndex] ${symbol} failed:`, e);
+  // Serial: see REFRESH_CONCURRENCY note. 9 sequential quotes fit easily in 60s.
+  for (const { symbol, name, currency, isYield } of INDICES_CONFIG) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const q: any = await yahooFinance.quote(symbol);
+      const price: number | undefined = q?.regularMarketPrice;
+      const previousClose: number | undefined = q?.regularMarketPreviousClose ?? q?.regularMarketOpen;
+      if (price == null || !previousClose) {
+        console.warn(`[MarketIndex] ${symbol}: price=${price} previousClose=${previousClose}`);
+        continue;
       }
-    })
-  );
+      const changePercent = Number((((price - previousClose) / previousClose) * 100).toFixed(4));
+      await prisma.marketIndex.upsert({
+        where: { symbol },
+        update: { name, price, previousClose, changePercent, currency, isYield, fetchedAt: new Date() },
+        create: { symbol, name, price, previousClose, changePercent, currency, isYield }
+      });
+      updated++;
+    } catch (e) {
+      console.error(`[MarketIndex] ${symbol} failed:`, e);
+    }
+  }
   return updated;
 }
 
@@ -371,41 +374,40 @@ export async function refreshMarketHistory(): Promise<void> {
   const period1 = new Date();
   period1.setFullYear(period1.getFullYear() - 1);
 
-  await Promise.allSettled(
-    INDICES_CONFIG.map(async ({ symbol }) => {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const result: any = await yahooFinance.chart(symbol, {
-          period1,
-          period2: new Date(),
-          interval: "1d"
-        });
-        const quotes = result?.quotes ?? [];
-        if (!quotes.length) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = quotes.filter((r: any) => r.close != null).map((r: any) => ({
-          symbol,
-          date: new Date(r.date),
-          open: r.open ?? r.close,
-          high: r.high ?? r.close,
-          low: r.low ?? r.close,
-          close: r.close
-        }));
-        if (!data.length) return;
-        // Historical OHLC for past dates is immutable, so skipDuplicates is safe;
-        // today's row gets refreshed by overwriting via a targeted upsert.
-        const today = data[data.length - 1];
-        await prisma.marketIndexHistory.createMany({ data, skipDuplicates: true });
-        await prisma.marketIndexHistory.upsert({
-          where: { symbol_date: { symbol, date: today.date } },
-          update: { open: today.open, high: today.high, low: today.low, close: today.close },
-          create: today
-        });
-      } catch (e) {
-        console.error(`[MarketHistory] ${symbol} failed:`, e);
-      }
-    })
-  );
+  // Serial: see REFRESH_CONCURRENCY note.
+  for (const { symbol } of INDICES_CONFIG) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result: any = await yahooFinance.chart(symbol, {
+        period1,
+        period2: new Date(),
+        interval: "1d"
+      });
+      const quotes = result?.quotes ?? [];
+      if (!quotes.length) continue;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = quotes.filter((r: any) => r.close != null).map((r: any) => ({
+        symbol,
+        date: new Date(r.date),
+        open: r.open ?? r.close,
+        high: r.high ?? r.close,
+        low: r.low ?? r.close,
+        close: r.close
+      }));
+      if (!data.length) continue;
+      // Historical OHLC for past dates is immutable, so skipDuplicates is safe;
+      // today's row gets refreshed by overwriting via a targeted upsert.
+      const today = data[data.length - 1];
+      await prisma.marketIndexHistory.createMany({ data, skipDuplicates: true });
+      await prisma.marketIndexHistory.upsert({
+        where: { symbol_date: { symbol, date: today.date } },
+        update: { open: today.open, high: today.high, low: today.low, close: today.close },
+        create: today
+      });
+    } catch (e) {
+      console.error(`[MarketHistory] ${symbol} failed:`, e);
+    }
+  }
 }
 
 export async function getMarketHistory(symbol: string, days = 365): Promise<HistoryPoint[]> {
