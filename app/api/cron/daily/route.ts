@@ -23,13 +23,18 @@ export async function GET(request: NextRequest) {
 
   const ran: string[] = [];
 
+  const t0 = Date.now();
+  const stamp = (label: string) => console.log(`[cron] ${label} +${Date.now() - t0}ms`);
+  stamp("start");
+
   // yahoo fetches run in parallel; prisma writes are serialized inside
   // lib/market via withPrismaLock to respect connection_limit=1.
   const [portfolio, indicesUpdated] = await Promise.all([
-    refreshAllPrices(),
-    refreshMarketIndices(),
-    refreshMarketHistory()
+    refreshAllPrices().then((r) => { stamp("refreshAllPrices done"); return r; }),
+    refreshMarketIndices().then((r) => { stamp("refreshMarketIndices done"); return r; }),
+    refreshMarketHistory().then((r) => { stamp("refreshMarketHistory done"); return r; })
   ]);
+  stamp("all-three done");
   ran.push(
     `portfolioPrices(${portfolio.updated}/${portfolio.attempted})`,
     `indices(${indicesUpdated})`,

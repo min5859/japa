@@ -4,10 +4,10 @@ export async function register() {
   const { prisma } = await import("@/lib/prisma");
   const { refreshMarketIndices, refreshMarketHistory } = await import("@/lib/market");
 
-  const [indexCount, historyCount] = await Promise.all([
-    prisma.marketIndex.count(),
-    prisma.marketIndexHistory.count()
-  ]);
+  // Sequential: PgBouncer transaction mode pins connection_limit=1, so even
+  // these two counts must not overlap or they race for the single connection.
+  const indexCount = await prisma.marketIndex.count();
+  const historyCount = await prisma.marketIndexHistory.count();
 
   const tasks: Promise<unknown>[] = [];
   if (indexCount === 0) {
