@@ -3,8 +3,6 @@ import { prismaDirect } from "@/lib/prisma";
 import { refreshAllPrices, refreshMarketHistory, refreshMarketIndices } from "@/lib/market";
 import { createSnapshot } from "@/lib/snapshot";
 
-console.error("[cron] module loaded", new Date().toISOString());
-
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
@@ -14,12 +12,10 @@ function nowKST(): Date {
 }
 
 export async function GET(request: NextRequest) {
-  console.error("[cron] handler enter", new Date().toISOString());
   const auth = request.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  console.error("[cron] auth ok");
 
   const kst = nowKST();
   const isJanFirst = kst.getUTCMonth() === 0 && kst.getUTCDate() === 1;
@@ -27,19 +23,14 @@ export async function GET(request: NextRequest) {
 
   const ran: string[] = [];
 
-  const t0 = Date.now();
-  const stamp = (label: string) => console.error(`[cron] ${label} +${Date.now() - t0}ms`);
-  stamp("start");
-
   // Use prismaDirect (bypasses PgBouncer) so per-query connection acquire
   // doesn't pile up under the lambda's 60s budget. yahoo fetches stay parallel;
   // prisma writes are still queued through withPrismaLock inside lib/market.
   const [portfolio, indicesUpdated] = await Promise.all([
-    refreshAllPrices(prismaDirect).then((r) => { stamp("refreshAllPrices done"); return r; }),
-    refreshMarketIndices(prismaDirect).then((r) => { stamp("refreshMarketIndices done"); return r; }),
-    refreshMarketHistory(prismaDirect).then((r) => { stamp("refreshMarketHistory done"); return r; })
+    refreshAllPrices(prismaDirect),
+    refreshMarketIndices(prismaDirect),
+    refreshMarketHistory(prismaDirect)
   ]);
-  stamp("all-three done");
   ran.push(
     `portfolioPrices(${portfolio.updated}/${portfolio.attempted})`,
     `indices(${indicesUpdated})`,
