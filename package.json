@@ -15,6 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "latest",
+    "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6",
     "@radix-ui/react-label": "latest",
     "@radix-ui/react-select": "latest",
@@ -27,6 +28,7 @@
     "openai": "^6.35.0",
     "react": "latest",
     "react-dom": "latest",
+    "react-hook-form": "^7.75.0",
     "react-markdown": "^10.1.0",
     "recharts": "latest",
     "remark-gfm": "^4.0.1",

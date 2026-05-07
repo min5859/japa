@@ -1,12 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 import type { AccountGroup } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { GroupActionState } from "@/app/actions/groups";
+import { groupFormSchema } from "@/lib/groups/schema";
+
+type GroupFormValues = z.input<typeof groupFormSchema>;
+type GroupFormOutput = z.output<typeof groupFormSchema>;
 
 type AccountOption = { id: string; name: string; institution: string | null };
 type ActionFn = (state: GroupActionState, formData: FormData) => Promise<GroupActionState>;
@@ -18,72 +25,79 @@ export type GroupDefaults = Partial<AccountGroup> & {
 export function GroupForm({
   action,
   accounts,
-  defaultValues
+  defaultValues,
 }: {
   action: ActionFn;
   accounts: AccountOption[];
   defaultValues?: GroupDefaults;
 }) {
-  const [state, formAction, pending] = useActionState(action, { error: null });
-  const [selected, setSelected] = useState<Set<string>>(
-    new Set(defaultValues?.accountIds ?? [])
-  );
+  const [state, formAction] = useActionState(action, { error: null });
+  const [pending, startTransition] = useTransition();
 
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<GroupFormValues, unknown, GroupFormOutput>({
+    resolver: zodResolver(groupFormSchema),
+    defaultValues: {
+      name: defaultValues?.name ?? "",
+      description: defaultValues?.description ?? "",
+      displayOrder: defaultValues?.displayOrder ?? 0,
+      accountIds: defaultValues?.accountIds ?? [],
+    },
+  });
+
+  const selectedIds = watch("accountIds") ?? [];
+  const selectedCount = Array.isArray(selectedIds) ? selectedIds.length : 0;
+
+  const onSubmit = handleSubmit((data) => {
+    const fd = new FormData();
+    fd.set("name", data.name);
+    fd.set("description", data.description ?? "");
+    fd.set("displayOrder", String(data.displayOrder));
+    for (const id of data.accountIds ?? []) fd.append("accountIds", id);
+    startTransition(() => formAction(fd));
+  });
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5">
       {state.error && (
         <div className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {state.error}
         </div>
       )}
 
-      {Array.from(selected).map((id) => (
-        <input key={id} type="hidden" name="accountIds" value={id} />
-      ))}
-
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="name">그룹 이름 *</Label>
           <Input
             id="name"
-            name="name"
-            defaultValue={defaultValues?.name ?? ""}
             placeholder="예: 절세계좌"
-            required
+            {...register("name")}
           />
+          {errors.name && (
+            <p className="text-xs text-destructive">{errors.name.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="displayOrder">정렬 순서</Label>
           <Input
             id="displayOrder"
-            name="displayOrder"
             type="number"
-            defaultValue={defaultValues?.displayOrder?.toString() ?? "0"}
+            {...register("displayOrder")}
           />
         </div>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="description">설명</Label>
-        <Textarea
-          id="description"
-          name="description"
-          rows={2}
-          defaultValue={defaultValues?.description ?? ""}
-        />
+        <Textarea id="description" rows={2} {...register("description")} />
       </div>
 
       <div className="space-y-2">
-        <Label>포함 계좌 ({selected.size}개 선택)</Label>
+        <Label>포함 계좌 ({selectedCount}개 선택)</Label>
         {accounts.length === 0 ? (
           <p className="text-sm text-muted-foreground">먼저 계좌를 등록해 주세요.</p>
         ) : (
@@ -95,9 +109,9 @@ export function GroupForm({
               >
                 <input
                   type="checkbox"
-                  checked={selected.has(a.id)}
-                  onChange={() => toggle(a.id)}
+                  value={a.id}
                   className="h-4 w-4 rounded border-input"
+                  {...register("accountIds")}
                 />
                 <span>
                   <span className="font-medium">{a.name}</span>

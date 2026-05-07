@@ -1,6 +1,9 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { z } from "zod";
 import type { Currency, Dividend } from "@prisma/client";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +13,11 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { DividendActionState } from "@/app/actions/dividends";
 import { getFxRateAction } from "@/app/actions/symbols";
+import { dividendFormSchema } from "@/lib/dividends/schema";
 import { CURRENCIES } from "@/lib/labels";
+
+type DividendFormValues = z.input<typeof dividendFormSchema>;
+type DividendFormOutput = z.output<typeof dividendFormSchema>;
 
 type AccountOption = { id: string; name: string; institution: string | null };
 type HoldingOption = {
@@ -52,33 +59,61 @@ function dateInputValue(v: string | Date | null | undefined): string {
   return d.toISOString().slice(0, 10);
 }
 
+function toNumber(value: number | string | null | undefined, fallback = 0): number {
+  if (value === null || value === undefined || value === "") return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 export function DividendForm({
   action,
   accounts,
   holdings,
-  defaultValues
+  defaultValues,
 }: {
   action: ActionFn;
   accounts: AccountOption[];
   holdings: HoldingOption[];
   defaultValues?: DividendDefaults;
 }) {
-  const [state, formAction, pending] = useActionState(action, { error: null });
-  const [accountId, setAccountId] = useState<string>(defaultValues?.accountId ?? "");
-  const [holdingId, setHoldingId] = useState<string>(defaultValues?.holdingId ?? "");
-  const [symbol, setSymbol] = useState<string>(defaultValues?.symbol ?? "");
-  const [currency, setCurrency] = useState<string>(defaultValues?.currency ?? "KRW");
-  const [quantity, setQuantity] = useState<string>(
-    defaultValues?.quantity?.toString() ?? "0"
-  );
-  const [fxRate, setFxRate] = useState<string>(
-    defaultValues?.fxRate?.toString() ?? "1"
-  );
+  const [state, formAction] = useActionState(action, { error: null });
+  const [pending, startTransition] = useTransition();
   const [fxError, setFxError] = useState<string | null>(null);
   const [fxLoading, startFxFetch] = useTransition();
-  const [taxOverride, setTaxOverride] = useState<boolean>(
-    defaultValues?.isTaxOverridden ?? false
-  );
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    getValues,
+    formState: { errors },
+  } = useForm<DividendFormValues, unknown, DividendFormOutput>({
+    resolver: zodResolver(dividendFormSchema),
+    defaultValues: {
+      accountId: defaultValues?.accountId ?? "",
+      holdingId: defaultValues?.holdingId ?? "",
+      symbol: defaultValues?.symbol ?? "",
+      dividendDate: dateInputValue(defaultValues?.dividendDate),
+      exDividendDate: dateInputValue(defaultValues?.exDividendDate),
+      amountPerShare: toNumber(defaultValues?.amountPerShare, 0),
+      quantity: toNumber(defaultValues?.quantity, 0),
+      totalAmount:
+        defaultValues?.totalAmount == null
+          ? undefined
+          : toNumber(defaultValues.totalAmount, 0),
+      taxAmount: toNumber(defaultValues?.taxAmount, 0),
+      isTaxOverridden: defaultValues?.isTaxOverridden ? "true" : "false",
+      currency: defaultValues?.currency ?? "KRW",
+      fxRate: toNumber(defaultValues?.fxRate, 1),
+      notes: defaultValues?.notes ?? "",
+    },
+  });
+
+  const accountId = watch("accountId");
+  const currency = watch("currency");
+  const taxOverrideRaw = watch("isTaxOverridden");
+  const taxOverride = taxOverrideRaw === "on" || taxOverrideRaw === "true";
 
   const accountHoldings = accountId
     ? holdings.filter((h) => h.accountId === accountId)
@@ -87,13 +122,13 @@ export function DividendForm({
   function fetchFx(next: string) {
     setFxError(null);
     if (next === "KRW") {
-      setFxRate("1");
+      setValue("fxRate", 1, { shouldDirty: true });
       return;
     }
     startFxFetch(async () => {
       const result = await getFxRateAction(next as Currency);
       if (result.ok) {
-        setFxRate(String(result.rate));
+        setValue("fxRate", result.rate, { shouldDirty: true });
       } else {
         setFxError(result.error);
       }
@@ -101,23 +136,45 @@ export function DividendForm({
   }
 
   function handleCurrencyChange(next: string) {
-    setCurrency(next);
+    setValue("currency", next as DividendFormValues["currency"], { shouldDirty: true });
     fetchFx(next);
   }
 
   function handleHoldingChange(id: string) {
-    setHoldingId(id);
+    setValue("holdingId", id, { shouldDirty: true });
     if (!id) return;
     const h = holdings.find((x) => x.id === id);
     if (!h) return;
-    setAccountId(h.accountId);
-    setSymbol(h.symbol ?? "");
-    setQuantity(h.quantity);
-    if (h.currency !== currency) handleCurrencyChange(h.currency);
+    setValue("accountId", h.accountId, { shouldDirty: true });
+    setValue("symbol", h.symbol ?? "", { shouldDirty: true });
+    setValue("quantity", toNumber(h.quantity, 0), { shouldDirty: true });
+    if (h.currency !== getValues("currency")) handleCurrencyChange(h.currency);
   }
 
+  const onSubmit = handleSubmit((data) => {
+    const fd = new FormData();
+    fd.set("accountId", data.accountId);
+    fd.set("holdingId", data.holdingId ?? "");
+    fd.set("symbol", data.symbol ?? "");
+    fd.set("dividendDate", data.dividendDate);
+    fd.set("exDividendDate", data.exDividendDate ?? "");
+    fd.set("amountPerShare", String(data.amountPerShare));
+    fd.set("quantity", String(data.quantity));
+    if (data.totalAmount !== undefined) {
+      fd.set("totalAmount", String(data.totalAmount));
+    }
+    fd.set("isTaxOverridden", data.isTaxOverridden ? "true" : "false");
+    if (data.isTaxOverridden && data.taxAmount !== undefined) {
+      fd.set("taxAmount", String(data.taxAmount));
+    }
+    fd.set("currency", data.currency);
+    fd.set("fxRate", String(data.fxRate));
+    fd.set("notes", data.notes ?? "");
+    startTransition(() => formAction(fd));
+  });
+
   return (
-    <form action={formAction} className="space-y-5">
+    <form onSubmit={onSubmit} className="space-y-5">
       {state.error && (
         <div className="rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {state.error}
@@ -127,13 +184,7 @@ export function DividendForm({
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="accountId">계좌 *</Label>
-          <Select
-            id="accountId"
-            name="accountId"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            required
-          >
+          <Select id="accountId" {...register("accountId")}>
             <option value="">계좌 선택...</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
@@ -142,13 +193,15 @@ export function DividendForm({
               </option>
             ))}
           </Select>
+          {errors.accountId && (
+            <p className="text-xs text-destructive">{errors.accountId.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="holdingId">보유종목 (선택)</Label>
           <Select
             id="holdingId"
-            name="holdingId"
-            value={holdingId}
+            {...register("holdingId")}
             onChange={(e) => handleHoldingChange(e.target.value)}
           >
             <option value="">선택 안 함</option>
@@ -168,32 +221,18 @@ export function DividendForm({
       <div className="grid gap-5 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="symbol">티커 / 코드</Label>
-          <Input
-            id="symbol"
-            name="symbol"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            placeholder="예: AAPL"
-          />
+          <Input id="symbol" placeholder="예: AAPL" {...register("symbol")} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="dividendDate">지급일 *</Label>
-          <Input
-            id="dividendDate"
-            name="dividendDate"
-            type="date"
-            defaultValue={dateInputValue(defaultValues?.dividendDate)}
-            required
-          />
+          <Input id="dividendDate" type="date" {...register("dividendDate")} />
+          {errors.dividendDate && (
+            <p className="text-xs text-destructive">{errors.dividendDate.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="exDividendDate">배당락일</Label>
-          <Input
-            id="exDividendDate"
-            name="exDividendDate"
-            type="date"
-            defaultValue={dateInputValue(defaultValues?.exDividendDate)}
-          />
+          <Input id="exDividendDate" type="date" {...register("exDividendDate")} />
         </div>
       </div>
 
@@ -202,36 +241,36 @@ export function DividendForm({
           <Label htmlFor="amountPerShare">주당 배당금 *</Label>
           <Input
             id="amountPerShare"
-            name="amountPerShare"
             type="number"
             step="0.000001"
             placeholder="0"
-            defaultValue={defaultValues?.amountPerShare?.toString() ?? "0"}
-            required
+            {...register("amountPerShare")}
           />
+          {errors.amountPerShare && (
+            <p className="text-xs text-destructive">{errors.amountPerShare.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="quantity">수량 *</Label>
           <Input
             id="quantity"
-            name="quantity"
             type="number"
             step="0.00000001"
             placeholder="0"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            required
+            {...register("quantity")}
           />
+          {errors.quantity && (
+            <p className="text-xs text-destructive">{errors.quantity.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="totalAmount">세전 총액 (선택)</Label>
           <Input
             id="totalAmount"
-            name="totalAmount"
             type="number"
             step="0.0001"
             placeholder="자동 = 주당 × 수량"
-            defaultValue={defaultValues?.totalAmount?.toString() ?? ""}
+            {...register("totalAmount")}
           />
         </div>
       </div>
@@ -241,8 +280,7 @@ export function DividendForm({
           <Label htmlFor="currency">통화</Label>
           <Select
             id="currency"
-            name="currency"
-            value={currency}
+            {...register("currency")}
             onChange={(e) => handleCurrencyChange(e.target.value)}
           >
             {CURRENCIES.map(({ value, label }) => (
@@ -270,16 +308,17 @@ export function DividendForm({
           </div>
           <Input
             id="fxRate"
-            name="fxRate"
             type="number"
             step="0.00000001"
             placeholder="1"
-            value={fxRate}
-            onChange={(e) => setFxRate(e.target.value)}
             disabled={fxLoading}
+            {...register("fxRate")}
           />
+          {errors.fxRate && (
+            <p className="text-xs text-destructive">{errors.fxRate.message}</p>
+          )}
           {fxError && <p className="text-xs text-destructive">{fxError}</p>}
-          {currency !== "KRW" && !fxError && (
+          {currency !== "KRW" && !fxError && !errors.fxRate && (
             <p className="text-xs text-muted-foreground">
               통화 선택 시 자동 채움. 직접 수정 가능.
             </p>
@@ -291,9 +330,13 @@ export function DividendForm({
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"
-            name="isTaxOverridden"
+            value="true"
             checked={taxOverride}
-            onChange={(e) => setTaxOverride(e.target.checked)}
+            onChange={(e) =>
+              setValue("isTaxOverridden", e.target.checked ? "true" : "false", {
+                shouldDirty: true,
+              })
+            }
             className="h-4 w-4 rounded border-input"
           />
           세금을 직접 입력 (체크 안 하면 계좌·통화 기준으로 자동 계산)
@@ -303,11 +346,10 @@ export function DividendForm({
             <Label htmlFor="taxAmount">원천징수 세액</Label>
             <Input
               id="taxAmount"
-              name="taxAmount"
               type="number"
               step="0.0001"
               placeholder="0"
-              defaultValue={defaultValues?.taxAmount?.toString() ?? "0"}
+              {...register("taxAmount")}
             />
           </div>
         )}
@@ -318,7 +360,7 @@ export function DividendForm({
 
       <div className="space-y-2">
         <Label htmlFor="notes">메모</Label>
-        <Textarea id="notes" name="notes" rows={3} defaultValue={defaultValues?.notes ?? ""} />
+        <Textarea id="notes" rows={3} {...register("notes")} />
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
