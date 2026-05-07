@@ -1,18 +1,30 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { logout } from "@/app/actions/auth";
 
 export function LogoutButton() {
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  async function handleLogout() {
+    setPending(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
+  }
+
   return (
     <Button
       size="sm"
       variant="ghost"
-      onClick={() => startTransition(() => logout())}
-      disabled={isPending}
+      onClick={handleLogout}
+      disabled={pending}
       title="로그아웃"
     >
       <LogOut className="h-4 w-4" />
