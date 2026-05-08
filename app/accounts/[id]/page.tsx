@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { getAccountWithPrices } from "@/lib/data";
 import { enrichAccount } from "@/lib/portfolio";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -165,10 +165,12 @@ export default async function AccountDetailPage({
                     return (
                       <tr key={holding.id} className="border-b last:border-0 hover:bg-secondary/30">
                         <td className="px-6 py-3">
-                          <p className="font-medium">{holding.name}</p>
-                          {holding.symbol && (
-                            <p className="text-xs text-muted-foreground">{holding.symbol}</p>
-                          )}
+                          <Link href={`/holdings/${holding.id}`} className="hover:underline">
+                            <p className="font-medium">{holding.name}</p>
+                            {holding.symbol && (
+                              <p className="text-xs text-muted-foreground">{holding.symbol}</p>
+                            )}
+                          </Link>
                         </td>
                         <td className="px-6 py-3 text-muted-foreground">
                           {ASSET_CLASS_LABELS[holding.assetClass] ?? holding.assetClass}
@@ -205,7 +207,17 @@ export default async function AccountDetailPage({
                         </td>
                         <td className="px-6 py-3">
                           <div className="flex justify-end gap-1">
-                            <Button asChild size="sm" variant="ghost">
+                            <Button asChild size="sm" variant="ghost" title="매수">
+                              <Link href={`/holdings/${holding.id}/trade/new?type=BUY`}>
+                                <ArrowUpRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                            <Button asChild size="sm" variant="ghost" title="매도">
+                              <Link href={`/holdings/${holding.id}/trade/new?type=SELL`}>
+                                <ArrowDownRight className="h-3.5 w-3.5" />
+                              </Link>
+                            </Button>
+                            <Button asChild size="sm" variant="ghost" title="편집">
                               <Link href={`/holdings/${holding.id}/edit`}>
                                 <Pencil className="h-3.5 w-3.5" />
                               </Link>

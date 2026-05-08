@@ -66,6 +66,13 @@ export async function getHolding(id: string) {
   return holding;
 }
 
+export async function getHoldingTransactions(holdingId: string) {
+  return prisma.transaction.findMany({
+    where: { holdingId },
+    orderBy: [{ tradeDate: "desc" }, { createdAt: "desc" }]
+  });
+}
+
 export async function listAiAnalyses(limit = 20) {
   const rows = await prisma.aiAnalysis.findMany({
     orderBy: { createdAt: "desc" },

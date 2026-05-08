@@ -61,10 +61,12 @@ export default async function HoldingsPage() {
                   return (
                     <tr key={holding.id} className="border-b last:border-0 hover:bg-secondary/30">
                       <td className="px-6 py-3">
-                        <p className="font-medium">{holding.name}</p>
-                        {holding.symbol && (
-                          <p className="text-xs text-muted-foreground">{holding.symbol}</p>
-                        )}
+                        <Link href={`/holdings/${holding.id}`} className="hover:underline">
+                          <p className="font-medium">{holding.name}</p>
+                          {holding.symbol && (
+                            <p className="text-xs text-muted-foreground">{holding.symbol}</p>
+                          )}
+                        </Link>
                       </td>
                       <td className="px-6 py-3 text-muted-foreground">
                         <Link
@@ -108,9 +110,14 @@ export default async function HoldingsPage() {
                         )}
                       </td>
                       <td className="px-6 py-3">
-                        <Button asChild size="sm" variant="ghost">
-                          <Link href={`/holdings/${holding.id}/edit`}>편집</Link>
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button asChild size="sm" variant="ghost">
+                            <Link href={`/holdings/${holding.id}`}>거래</Link>
+                          </Button>
+                          <Button asChild size="sm" variant="ghost">
+                            <Link href={`/holdings/${holding.id}/edit`}>편집</Link>
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );

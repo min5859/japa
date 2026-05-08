@@ -43,6 +43,11 @@ enum Currency {
   SGD
 }
 
+enum TransactionType {
+  BUY
+  SELL
+}
+
 model Account {
   id                      String      @id @default(cuid())
   name                    String
@@ -58,6 +63,7 @@ model Account {
   updatedAt               DateTime    @updatedAt
   holdings                Holding[]
   dividends               Dividend[]
+  transactions            Transaction[]
   groups                  AccountGroup[]
 
   @@index([type])
@@ -92,12 +98,39 @@ model Holding {
   notes          String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
-  account        Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account        Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
   dividends      Dividend[]
+  transactions   Transaction[]
 
   @@index([accountId])
   @@index([assetClass])
   @@index([symbol])
+}
+
+// 매수/매도 거래 내역. createTransaction 시 server action이 Holding.quantity·averageCost·Account.cashBalance를 트랜잭션으로 자동 갱신.
+// realizedGain은 SELL 시점에 산정해 row에 박아둠 → 이후 평균단가 변경에도 과거 매도의 실현 손익은 흔들리지 않음.
+model Transaction {
+  id            String          @id @default(cuid())
+  accountId     String
+  holdingId     String
+  type          TransactionType
+  tradeDate     DateTime        @db.Date
+  quantity      Decimal         @db.Decimal(24, 8)
+  pricePerShare Decimal         @db.Decimal(18, 6)
+  fee           Decimal         @default(0) @db.Decimal(18, 4)
+  currency      Currency        @default(KRW)
+  fxRate        Decimal         @default(1) @db.Decimal(18, 8)
+  realizedGain  Decimal?        @db.Decimal(18, 4)
+  cashAdjusted  Boolean         @default(false)
+  notes         String?
+  createdAt     DateTime        @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  holding Holding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, tradeDate])
+  @@index([holdingId, tradeDate])
+  @@index([tradeDate])
 }
 
 model PriceCache {
