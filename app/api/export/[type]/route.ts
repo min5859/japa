@@ -42,9 +42,28 @@ const EXPORTS: Record<string, CsvExport> = {
     }
   },
 
+  // accountIds는 N:M 관계를 ;-구분 cuid 목록으로 직렬화 — 단일 CSV로 round-trip.
+  groups: {
+    headers: [
+      "id", "name", "description", "displayOrder",
+      "accountIds", "createdAt", "updatedAt"
+    ],
+    build: async () => {
+      const rows = await prisma.accountGroup.findMany({
+        orderBy: [{ displayOrder: "asc" }, { name: "asc" }],
+        include: { accounts: { select: { id: true } } }
+      });
+      return rows.map((g) => [
+        g.id, g.name, g.description ?? "", g.displayOrder,
+        g.accounts.map((a) => a.id).join(";"),
+        g.createdAt.toISOString(), g.updatedAt.toISOString()
+      ]);
+    }
+  },
+
   holdings: {
     headers: [
-      "id", "accountName", "name", "symbol", "assetClass", "currency",
+      "id", "accountId", "accountName", "name", "symbol", "assetClass", "currency",
       "quantity", "averageCost", "manualPrice", "manualFxRate",
       "dividendYield", "notes", "createdAt", "updatedAt"
     ],
@@ -54,7 +73,7 @@ const EXPORTS: Record<string, CsvExport> = {
         include: { account: { select: { name: true } } }
       });
       return rows.map((h) => [
-        h.id, h.account.name, h.name, h.symbol ?? "", h.assetClass, h.currency,
+        h.id, h.accountId, h.account.name, h.name, h.symbol ?? "", h.assetClass, h.currency,
         toNumber(h.quantity), toNumber(h.averageCost),
         toNumber(h.manualPrice), toNumber(h.manualFxRate),
         h.dividendYield != null ? toNumber(h.dividendYield) : "",
@@ -63,9 +82,32 @@ const EXPORTS: Record<string, CsvExport> = {
     }
   },
 
+  transactions: {
+    headers: [
+      "id", "accountId", "holdingId", "type", "tradeDate",
+      "quantity", "pricePerShare", "fee", "currency", "fxRate",
+      "realizedGain", "cashAdjusted", "notes", "createdAt"
+    ],
+    build: async () => {
+      const rows = await prisma.transaction.findMany({
+        orderBy: { tradeDate: "asc" }
+      });
+      return rows.map((t) => [
+        t.id, t.accountId, t.holdingId, t.type,
+        t.tradeDate.toISOString().slice(0, 10),
+        toNumber(t.quantity), toNumber(t.pricePerShare), toNumber(t.fee),
+        t.currency, toNumber(t.fxRate),
+        t.realizedGain != null ? toNumber(t.realizedGain) : "",
+        t.cashAdjusted, t.notes ?? "",
+        t.createdAt.toISOString()
+      ]);
+    }
+  },
+
   dividends: {
     headers: [
-      "id", "dividendDate", "exDividendDate", "accountName", "holdingName",
+      "id", "accountId", "holdingId", "dividendDate", "exDividendDate",
+      "accountName", "holdingName",
       "symbol", "amountPerShare", "quantity", "totalAmount", "taxAmount",
       "netAmount", "currency", "fxRate", "isTaxOverridden", "notes",
       "createdAt", "updatedAt"
@@ -79,7 +121,7 @@ const EXPORTS: Record<string, CsvExport> = {
         }
       });
       return rows.map((d) => [
-        d.id,
+        d.id, d.accountId, d.holdingId ?? "",
         d.dividendDate.toISOString().slice(0, 10),
         d.exDividendDate ? d.exDividendDate.toISOString().slice(0, 10) : "",
         d.account.name,

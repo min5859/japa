@@ -14,6 +14,7 @@ import {
   Menu,
   Receipt,
   Search,
+  Settings,
   TrendingUp,
   X,
   type LucideIcon
@@ -34,7 +35,8 @@ const NAV: NavItem[] = [
   { href: "/market", label: "Market", icon: TrendingUp },
   { href: "/tax", label: "세금", icon: Receipt },
   { href: "/ai", label: "AI 분석", icon: Bot },
-  { href: "/chat", label: "AI 채팅", icon: MessageCircle }
+  { href: "/chat", label: "AI 채팅", icon: MessageCircle },
+  { href: "/settings/data", label: "데이터 관리", icon: Settings }
 ];
 
 function isItemActive(itemHref: string, pathname: string) {
