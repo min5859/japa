@@ -6,8 +6,6 @@ import { prisma } from "@/lib/prisma";
 
 export type DataActionState = { error: string | null; message: string | null };
 
-const INITIAL_STATE: DataActionState = { error: null, message: null };
-
 // RFC 4180 호환 미니 파서 — 따옴표 escape("")·CRLF·LF·콤마/개행 포함 필드 처리.
 function parseCsv(text: string): string[][] {
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1); // BOM
@@ -352,5 +350,3 @@ export async function importAccountData(
     };
   }
 }
-
-export { INITIAL_STATE as INITIAL_DATA_STATE };
